@@ -123,9 +123,7 @@ python generate_data.py
 python train_model.py
 streamlit run dashboard.py
 ```
-
 ## Suggested message to send
-
 > Hey, I built this healthcare AI prototype and shared it here for you to explore. Please download or clone the project, install the dependencies from the requirements file, and follow the setup instructions in the README to run the dashboard locally.
 
 ## Notes

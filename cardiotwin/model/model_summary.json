@@ -1,0 +1,25 @@
+{
+  "features": [
+    "age",
+    "sex",
+    "bmi",
+    "systolic_bp",
+    "diastolic_bp",
+    "cholesterol",
+    "family_history",
+    "smoker",
+    "diabetes",
+    "hrv_mean",
+    "resting_hr_mean",
+    "mean_hr",
+    "sleep_hours",
+    "sleep_efficiency",
+    "daily_steps",
+    "activity_score",
+    "hrv_drop_from_baseline",
+    "sleep_drop_from_baseline",
+    "step_drop_from_baseline",
+    "resting_hr_rise_from_baseline"
+  ],
+  "roc_auc": 0.8012
+}

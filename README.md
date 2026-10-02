@@ -20,7 +20,7 @@ Healthcare innovation often starts with synthetic data because real medical reco
 
 - `generate_data.py` — creates synthetic patient profiles and wearable time-series data
 - `train_model.py` — trains the risk prediction model and saves the model artifact
-- `dashboard.py` — Streamlit-based dashboard for visualizing patient risk and trends
+- `frontend/` — React/TypeScript dashboard
 - `requirements.txt` — Python package dependencies
 - `data/` — generated patient and wearable data files
 - `models/` — trained model and metadata
@@ -63,13 +63,15 @@ python generate_data.py
 python train_model.py
 ```
 
-### 5) Launch the dashboard
+### 5) Launch the React dashboard
 
 ```bash
-streamlit run dashboard.py
+cd frontend
+npm install
+npm run dev
 ```
 
-Then open the local URL displayed in the terminal.
+Then open the local URL displayed by Vite.
 
 ## How the model works
 
@@ -121,10 +123,13 @@ python -m venv .venv
 pip install -r requirements.txt
 python generate_data.py
 python train_model.py
-streamlit run dashboard.py
+cd frontend
+npm install
+npm run dev
 ```
+
 ## Suggested message to send
-> Hey, I built this healthcare AI prototype and shared it here for you to explore. Please download or clone the project, install the dependencies from the requirements file, and follow the setup instructions in the README to run the dashboard locally.
+> Hey, I built this healthcare AI prototype and shared it here for you to explore. Please download or clone the project, install the dependencies from the requirements file, and follow the setup instructions in the README to run the model and React dashboard locally.
 
 ## Notes
 

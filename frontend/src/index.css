@@ -1,0 +1,204 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    --heart-beat-duration: 0.85s;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    margin: 0;
+    padding: 0;
+  }
+
+  html[data-theme='light'] body {
+    background-color: #F7F9FB;
+    color: #191C1E;
+  }
+
+  /* Monospace for all numbers, decimal readings, and vitals */
+  .font-mono,
+  .vital-val,
+  .metric-mono {
+    font-family: var(--font-mono);
+    font-feature-settings: "tnum" 1, "zero" 1;
+  }
+
+  /* Strict Class II/III Medical Instrument Elevation: strictly no drop shadows */
+  * {
+    box-shadow: none !important;
+  }
+}
+
+/* Map the dashboard's navy surface utilities to the documented light palette. */
+html[data-theme='light'] [class*="bg-[#0A0E18]"] {
+  background-color: #F7F9FB !important;
+}
+
+html[data-theme='light'] [class*="bg-[#131B2E]"] {
+  background-color: #FFFFFF !important;
+}
+
+html[data-theme='light'] [class*="bg-[#161E31]"] {
+  background-color: #F2F4F6 !important;
+}
+
+html[data-theme='light'] [class*="text-[#F2F4F6]"] {
+  color: #191C1E !important;
+}
+
+html[data-theme='light'] [class*="text-[#9EA4B5]"] {
+  color: #45464D !important;
+}
+
+html[data-theme='light'] [class*="text-red-300"],
+html[data-theme='light'] [class*="text-red-400"] {
+  color: #93000A !important;
+}
+
+html[data-theme='light'] [class*="text-amber-300"],
+html[data-theme='light'] [class*="text-amber-400"] {
+  color: #7A4B00 !important;
+}
+
+html[data-theme='light'] [class*="text-emerald-300"],
+html[data-theme='light'] [class*="text-emerald-400"] {
+  color: #006B4F !important;
+}
+
+html[data-theme='light'] [class*="dark:text-[#F87171]"] {
+  color: #93000A !important;
+}
+
+html[data-theme='light'] [class*="dark:text-[#FBBF24]"] {
+  color: #7A4B00 !important;
+}
+
+html[data-theme='light'] [class*="dark:text-[#34D399]"] {
+  color: #006B4F !important;
+}
+
+html[data-theme='light'] [class*="border-[#323D57]"] {
+  border-color: #C6C6CD !important;
+}
+
+html[data-theme='light'] [class*="placeholder-[#9EA4B5]"]::placeholder {
+  color: #6B6D75 !important;
+}
+
+html[data-theme='light'] [class*="hover:bg-[#161E31]"]:hover,
+html[data-theme='light'] [class*="hover:bg-[#1C263D]"]:hover {
+  background-color: #E8EBEF !important;
+}
+
+html[data-theme='light'] [class*="hover:text-[#F2F4F6]"]:hover {
+  color: #191C1E !important;
+}
+
+html[data-theme='light'] ::-webkit-scrollbar-track {
+  background: #F2F4F6;
+}
+
+html[data-theme='light'] ::-webkit-scrollbar-thumb {
+  background: #C6C6CD;
+}
+
+/* Dynamic Anatomical Beating Heart Keyframes */
+@keyframes heart-pump {
+  0% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 2px rgba(239, 68, 68, 0.4));
+  }
+  14% {
+    transform: scale(1.14) rotate(-1deg);
+    filter: drop-shadow(0 0 14px rgba(239, 68, 68, 0.85));
+  }
+  28% {
+    transform: scale(0.97) rotate(0.5deg);
+    filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.5));
+  }
+  42% {
+    transform: scale(1.08) rotate(-0.5deg);
+    filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.75));
+  }
+  70% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 2px rgba(239, 68, 68, 0.3));
+  }
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 2px rgba(239, 68, 68, 0.4));
+  }
+}
+
+.animate-heart-beat {
+  animation: heart-pump var(--heart-beat-duration, 0.85s) ease-in-out infinite;
+  transform-origin: center center;
+  will-change: transform, filter;
+}
+
+/* Pulse waves radiating from cardiac focus */
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring var(--heart-beat-duration, 0.85s) cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+/* Oscilloscope CRT Scanline Effect */
+.ecg-grid {
+  background-color: #050b14;
+  background-image:
+    linear-gradient(rgba(52, 211, 153, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(52, 211, 153, 0.08) 1px, transparent 1px),
+    linear-gradient(rgba(52, 211, 153, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(52, 211, 153, 0.03) 1px, transparent 1px);
+  background-size: 25px 25px, 25px 25px, 5px 5px, 5px 5px;
+}
+
+.ecg-grid-amber {
+  background-color: #0d0a04;
+  background-image:
+    linear-gradient(rgba(251, 191, 36, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(251, 191, 36, 0.09) 1px, transparent 1px),
+    linear-gradient(rgba(251, 191, 36, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(251, 191, 36, 0.03) 1px, transparent 1px);
+  background-size: 25px 25px, 25px 25px, 5px 5px, 5px 5px;
+}
+
+.ecg-grid-red {
+  background-color: #120505;
+  background-image:
+    linear-gradient(rgba(248, 113, 113, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(248, 113, 113, 0.1) 1px, transparent 1px),
+    linear-gradient(rgba(248, 113, 113, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(248, 113, 113, 0.03) 1px, transparent 1px);
+  background-size: 25px 25px, 25px 25px, 5px 5px, 5px 5px;
+}
+
+/* Custom sterile clinical scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: #0A0E18;
+}
+::-webkit-scrollbar-thumb {
+  background: #323D57;
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #7C839B;
+}

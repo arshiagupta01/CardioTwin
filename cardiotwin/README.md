@@ -35,8 +35,6 @@ cardiotwin/
 │   └── explain.py
 ├── api/
 │   └── app.py
-├── dashboard/
-│   └── index.html
 ├── notebooks/
 │   └── exploration.ipynb
 ├── docs/
@@ -93,7 +91,7 @@ python model/evaluate.py
 python api/app.py
 ```
 
-For the dashboard, open the static HTML mockup in the browser or serve it with a lightweight file server.
+The old static HTML dashboard has been removed. The React frontend is in the repository's `../frontend/` folder. From this project folder, run `cd ../frontend`, then `npm install` and `npm run dev`.
 
 ## Google Colab workflow
 

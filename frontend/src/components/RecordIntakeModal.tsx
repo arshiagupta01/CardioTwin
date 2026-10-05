@@ -16,27 +16,48 @@ export const RecordIntakeModal: React.FC<RecordIntakeModalProps> = ({
   onClose,
   onRecordAdded,
 }) => {
-  const [selectedPatientId, setSelectedPatientId] = useState<number>(101);
+  const initialPatient = cohort.find((p) => p.ehr.patient_id === 101) || cohort[0];
+  const [selectedPatientId, setSelectedPatientId] = useState<number>(initialPatient?.ehr.patient_id ?? 101);
   const [activeTab, setActiveTab] = useState<'wearable' | 'ehr' | 'presets'>('wearable');
 
   // Form State
-  const [hrv, setHrv] = useState<number>(24.5);
-  const [restingHr, setRestingHr] = useState<number>(84);
-  const [sleepHours, setSleepHours] = useState<number>(4.8);
-  const [sleepEfficiency, setSleepEfficiency] = useState<number>(0.64);
-  const [steps, setSteps] = useState<number>(2400);
+  const [hrv, setHrv] = useState<number>(() => initialPatient?.latest_telemetry.hrv_mean ?? 24.5);
+  const [restingHr, setRestingHr] = useState<number>(() => initialPatient?.latest_telemetry.resting_hr_mean ?? 84);
+  const [sleepHours, setSleepHours] = useState<number>(() => initialPatient?.latest_telemetry.sleep_hours ?? 4.8);
+  const [sleepEfficiency, setSleepEfficiency] = useState<number>(() => initialPatient?.latest_telemetry.sleep_efficiency ?? 0.64);
+  const [steps, setSteps] = useState<number>(() => Math.round(initialPatient?.latest_telemetry.daily_steps ?? 2400));
 
-  const [systolicBp, setSystolicBp] = useState<number>(152);
-  const [diastolicBp, setDiastolicBp] = useState<number>(96);
-  const [cholesterol, setCholesterol] = useState<number>(235);
-  const [glucose, setGlucose] = useState<number>(128);
+  const [systolicBp, setSystolicBp] = useState<number>(() => initialPatient?.ehr.systolic_bp ?? 152);
+  const [diastolicBp, setDiastolicBp] = useState<number>(() => initialPatient?.ehr.diastolic_bp ?? 96);
+  const [cholesterol, setCholesterol] = useState<number>(() => initialPatient?.ehr.cholesterol ?? 235);
+  const [glucose, setGlucose] = useState<number>(() => initialPatient?.ehr.fasting_glucose ?? 128);
 
   const [isSimulatingSync, setIsSimulatingSync] = useState(false);
   const [syncSuccess, setSyncSuccess] = useState(false);
-
-  if (!isOpen) return null;
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [inferenceMessage, setInferenceMessage] = useState('');
 
   const currentPatient = cohort.find((p) => p.ehr.patient_id === selectedPatientId) || cohort[0];
+
+  const setFormFromPatient = (patient: PatientProfile) => {
+    setHrv(patient.latest_telemetry.hrv_mean);
+    setRestingHr(patient.latest_telemetry.resting_hr_mean);
+    setSleepHours(patient.latest_telemetry.sleep_hours);
+    setSleepEfficiency(patient.latest_telemetry.sleep_efficiency);
+    setSteps(Math.round(patient.latest_telemetry.daily_steps));
+    setSystolicBp(patient.ehr.systolic_bp);
+    setDiastolicBp(patient.ehr.diastolic_bp);
+    setCholesterol(patient.ehr.cholesterol);
+    setGlucose(patient.ehr.fasting_glucose);
+  };
+
+  const handlePatientChange = (patientId: number) => {
+    setSelectedPatientId(patientId);
+    const patient = cohort.find((p) => p.ehr.patient_id === patientId);
+    if (patient) setFormFromPatient(patient);
+  };
+
+  if (!isOpen) return null;
 
   // Quick Presets
   const applyPreset = (type: 'safe' | 'strain' | 'crisis') => {
@@ -98,10 +119,20 @@ export const RecordIntakeModal: React.FC<RecordIntakeModalProps> = ({
   };
 
   // Submit and run inference
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    setInferenceMessage('');
 
-    const evaluation = evaluateRiskScore({
+    const baseline = currentPatient.telemetry_series[0] ?? currentPatient.latest_telemetry;
+    const activityScore = Math.min(100, (steps / 8500) * 60 + sleepEfficiency * 40);
+    const hrvDrop = baseline.hrv_mean - hrv;
+    const restingHrRise = restingHr - baseline.resting_hr_mean;
+    const sleepDrop = baseline.sleep_hours - sleepHours;
+    const stepDrop = baseline.daily_steps - steps;
+
+    const localEvaluation = evaluateRiskScore({
       age: currentPatient.ehr.age,
       sex: currentPatient.ehr.sex === 'M' ? 1 : 0,
       bmi: currentPatient.ehr.bmi,
@@ -116,7 +147,46 @@ export const RecordIntakeModal: React.FC<RecordIntakeModalProps> = ({
       sleep_hours: sleepHours,
       sleep_efficiency: sleepEfficiency,
       daily_steps: steps,
+      hrv_drop_from_baseline: hrvDrop,
+      resting_hr_rise_from_baseline: restingHrRise,
     });
+
+    let evaluation = localEvaluation;
+    try {
+      const response = await fetch('/api/risk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          age: currentPatient.ehr.age,
+          sex: currentPatient.ehr.sex === 'M' ? 1 : 0,
+          bmi: currentPatient.ehr.bmi,
+          systolic_bp: systolicBp,
+          diastolic_bp: diastolicBp,
+          cholesterol,
+          family_history: currentPatient.ehr.family_history,
+          smoker: currentPatient.ehr.smoker,
+          diabetes: currentPatient.ehr.diabetes,
+          hrv_mean: hrv,
+          resting_hr_mean: restingHr,
+          mean_hr: restingHr + 9,
+          sleep_hours: sleepHours,
+          sleep_efficiency: sleepEfficiency,
+          daily_steps: steps,
+          activity_score: activityScore,
+          hrv_drop_from_baseline: hrvDrop,
+          sleep_drop_from_baseline: sleepDrop,
+          step_drop_from_baseline: stepDrop,
+          resting_hr_rise_from_baseline: restingHrRise,
+        }),
+      });
+      if (!response.ok) throw new Error('Backend inference failed');
+      const result: { risk_score: number; state: typeof localEvaluation.state } = await response.json();
+      evaluation = { ...localEvaluation, score: result.risk_score, state: result.state };
+    } catch {
+      setInferenceMessage('Backend unavailable; saved using the local risk estimate.');
+    } finally {
+      setIsSubmitting(false);
+    }
 
     const newDayIndex = currentPatient.telemetry_series.length + 1;
     const newDayRecord: DayTelemetry = {
@@ -128,14 +198,14 @@ export const RecordIntakeModal: React.FC<RecordIntakeModalProps> = ({
       sleep_hours: sleepHours,
       sleep_efficiency: sleepEfficiency,
       daily_steps: steps,
-      activity_score: Math.min(100, (steps / 1000) * 10),
+      activity_score: activityScore,
       risk_event_next_24h: evaluation.state === 'decompensation' ? 1 : 0,
       risk_score: evaluation.score,
       state: evaluation.state,
-      hrv_drop_from_baseline: Math.max(0, 48 - hrv),
-      resting_hr_rise_from_baseline: Math.max(0, restingHr - 68),
-      sleep_drop_from_baseline: Math.max(0, 7.2 - sleepHours),
-      step_drop_from_baseline: Math.max(0, 8000 - steps),
+      hrv_drop_from_baseline: hrvDrop,
+      resting_hr_rise_from_baseline: restingHrRise,
+      sleep_drop_from_baseline: sleepDrop,
+      step_drop_from_baseline: stepDrop,
     };
 
     const updatedProfile: PatientProfile = {
@@ -152,6 +222,7 @@ export const RecordIntakeModal: React.FC<RecordIntakeModalProps> = ({
       telemetry_series: [...currentPatient.telemetry_series, newDayRecord],
     };
 
+    setFormFromPatient(updatedProfile);
     onRecordAdded(updatedProfile);
     onClose();
   };
@@ -184,7 +255,7 @@ export const RecordIntakeModal: React.FC<RecordIntakeModalProps> = ({
             </label>
             <select
               value={selectedPatientId}
-              onChange={(e) => setSelectedPatientId(Number(e.target.value))}
+              onChange={(e) => handlePatientChange(Number(e.target.value))}
               className="w-full bg-[#0A0E18] border border-[#323D57] px-3 py-2 rounded-[2px] text-xs font-mono text-[#F2F4F6] focus:border-[#7C839B] focus:outline-none"
             >
               {cohort.map((p) => (
@@ -427,12 +498,18 @@ export const RecordIntakeModal: React.FC<RecordIntakeModalProps> = ({
             </button>
             <button
               type="submit"
-              className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-[2px] text-xs font-mono font-bold flex items-center gap-1.5 shadow-none transition-colors"
+              disabled={isSubmitting}
+              className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white rounded-[2px] text-xs font-mono font-bold flex items-center gap-1.5 shadow-none transition-colors"
             >
               <Activity className="w-3.5 h-3.5" />
-              <span>SAVE & RUN DIGITAL TWIN INFERENCE</span>
+              <span>{isSubmitting ? 'RUNNING MODEL…' : 'SAVE & RUN DIGITAL TWIN INFERENCE'}</span>
             </button>
           </div>
+          {inferenceMessage && (
+            <p role="status" className="text-[10px] font-mono text-amber-300 text-right">
+              {inferenceMessage}
+            </p>
+          )}
         </form>
       </div>
     </div>

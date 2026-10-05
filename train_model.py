@@ -5,7 +5,7 @@ import joblib
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, roc_auc_score
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GroupShuffleSplit
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -42,13 +42,10 @@ def main() -> None:
     y = df["risk_event_next_24h"]
     X = df[FEATURE_COLUMNS]
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X,
-        y,
-        test_size=0.2,
-        random_state=42,
-        stratify=y,
-    )
+    splitter = GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
+    train_indices, test_indices = next(splitter.split(X, y, groups=df["patient_id"]))
+    X_train, X_test = X.iloc[train_indices], X.iloc[test_indices]
+    y_train, y_test = y.iloc[train_indices], y.iloc[test_indices]
 
     model = RandomForestClassifier(
         n_estimators=350,

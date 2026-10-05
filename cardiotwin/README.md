@@ -74,7 +74,7 @@ This is the core demonstration: a digital twin that warns before a likely cardio
 
 ## One-minute submission pitch
 
-CardioTwin is a digital-twin solution for cardiovascular risk prediction that fuses static patient health records with dynamic wearable behaviour to anticipate hypertensive episodes before they happen. In a privacy-safe sandbox setup, we generate synthetic EHR profiles and wearable trajectories that show the signature of worsening physiological stress: falling HRV, poorer sleep, reduced activity, and rising resting heart rate. The model then predicts a high-risk event in the next 24–48 hours and explains its reasoning in a clinician-friendly dashboard. This makes the project clinically relevant, transparent, and demonstrably useful for preventive care planning.
+CardioTwin is a digital-twin solution for cardiovascular risk prediction that fuses static patient health records with dynamic wearable behaviour to anticipate hypertensive episodes before they happen. In a privacy-safe sandbox setup, we generate synthetic EHR profiles and wearable trajectories that show the signature of worsening physiological stress: falling HRV, poorer sleep, reduced activity, and rising resting heart rate. The model estimates next-24-hour risk and presents the result in a clinician-friendly dashboard. This is a prototype demonstration, not a clinical decision system.
 
 ## How to run
 
@@ -88,10 +88,10 @@ python data/wearable_sim.py
 python fusion/feature_pipeline.py
 python model/train.py
 python model/evaluate.py
-python api/app.py
+python -m uvicorn api.app:app --reload --port 8000
 ```
 
-The old static HTML dashboard has been removed. The React frontend is in the repository's `../frontend/` folder. From this project folder, run `cd ../frontend`, then `npm install` and `npm run dev`.
+The old static HTML dashboard has been removed. In a second terminal, run the React frontend from this project folder's `../frontend/` directory with `npm install` and `npm run dev`.
 
 ## Google Colab workflow
 

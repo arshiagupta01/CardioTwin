@@ -48,22 +48,35 @@ source .venv/bin/activate
 ### 2) Install dependencies
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements.txt -r cardiotwin/requirements.txt
 ```
 
 ### 3) Generate the synthetic data
 
 ```bash
-python generate_data.py
+python cardiotwin/data/generate_ehr.py
+python cardiotwin/data/wearable_sim.py
+python cardiotwin/fusion/feature_pipeline.py
 ```
 
 ### 4) Train the model
 
 ```bash
-python train_model.py
+python cardiotwin/model/train.py
 ```
 
-### 5) Launch the React dashboard
+### 5) Launch the backend API
+
+In a terminal from the repository root, install the API dependencies and start FastAPI:
+
+```bash
+pip install -r cardiotwin/requirements.txt
+uvicorn cardiotwin.api.app:app --reload --port 8000
+```
+
+The trained model must be available at `cardiotwin/model/cardiotwin_model.joblib`.
+
+### 6) Launch the React dashboard
 
 ```bash
 cd frontend
@@ -72,6 +85,7 @@ npm run dev
 ```
 
 Then open the local URL displayed by Vite.
+The Vite development server proxies `/api` requests to the backend on port 8000.
 
 ## How the model works
 

@@ -93,6 +93,14 @@ python -m uvicorn api.app:app --reload --port 8000
 
 The old static HTML dashboard has been removed. In a second terminal, run the React frontend from this project folder's `../frontend/` directory with `npm install` and `npm run dev`.
 
+## Deploy the model API to Vercel
+
+1. Import this repository in Vercel and set the project root directory to `cardiotwin`.
+2. Keep the detected Python framework preset and deploy. Vercel installs dependencies from `requirements.txt` and serves the FastAPI app exported by `app.py`.
+3. Verify the deployment at `/health` and open `/docs` for the inference endpoint.
+
+The API is available at `/api/risk` on the deployed domain. This deploys the model API only; the Vite dashboard remains a separate frontend deployment.
+
 ## Google Colab workflow
 
 Yes — you can train the model in Google Colab and keep the project in VS Code. The practical workflow is:

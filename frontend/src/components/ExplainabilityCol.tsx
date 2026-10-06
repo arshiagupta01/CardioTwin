@@ -1,22 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { SHAPContribution, PatientProfile, RiskState } from '../types/clinical';
-import { evaluateRiskScore } from '../data/cohortData';
+import { PatientProfile } from '../types/clinical';
+import { fetchModelImportance, ModelImportance, predictRisk, toModelFeatures, ModelPrediction } from '../data/riskApi';
 import { Cpu, Sliders, PhoneCall, Stethoscope, Download, ArrowRight, Check, AlertCircle, Wifi, WifiOff } from 'lucide-react';
-
-interface ApiShapDriver {
-  feature: string;
-  label: string;
-  shap_value: number;
-  impact_percent: number;
-  direction: 'elevate' | 'reduce';
-  clinical_note: string;
-  feature_value: number;
-}
-
 
 interface ExplainabilityColProps {
   patient: PatientProfile;
-  shapDrivers: SHAPContribution[];
+  modelConnected: boolean;
   onTriggerCall: () => void;
   onOrderStat: () => void;
   onExportFhir: () => void;
@@ -24,7 +13,7 @@ interface ExplainabilityColProps {
 
 export const ExplainabilityCol: React.FC<ExplainabilityColProps> = ({
   patient,
-  shapDrivers,
+  modelConnected,
   onTriggerCall,
   onOrderStat,
   onExportFhir,
@@ -36,27 +25,72 @@ export const ExplainabilityCol: React.FC<ExplainabilityColProps> = ({
   const [targetSleep, setTargetSleep] = useState(latest.sleep_hours);
   const [targetSbp, setTargetSbp] = useState(patient.ehr.systolic_bp);
 
-  // Evaluate simulated risk live with client-side ML engine
-  const simResult = evaluateRiskScore({
-    age: patient.ehr.age,
-    sex: patient.ehr.sex === 'M' ? 1 : 0,
-    bmi: patient.ehr.bmi,
-    systolic_bp: targetSbp,
-    diastolic_bp: patient.ehr.diastolic_bp,
-    cholesterol: patient.ehr.cholesterol,
-    family_history: patient.ehr.family_history,
-    smoker: patient.ehr.smoker,
-    diabetes: patient.ehr.diabetes,
-    hrv_mean: targetHrv,
-    resting_hr_mean: targetRhr,
-    sleep_hours: targetSleep,
-    sleep_efficiency: targetSleep > 6 ? 0.85 : 0.65,
-    daily_steps: 6500,
-  });
+  const [simPrediction, setSimPrediction] = useState<ModelPrediction | null>(null);
+  const [simLoading, setSimLoading] = useState(false);
+  const [simError, setSimError] = useState(false);
+  const [importance, setImportance] = useState<ModelImportance[]>([]);
+  const [modelAuc, setModelAuc] = useState<number | null>(null);
 
-  const simRiskPercent = (simResult.score * 100).toFixed(1);
+  useEffect(() => {
+    setTargetHrv(latest.hrv_mean);
+    setTargetRhr(latest.resting_hr_mean);
+    setTargetSleep(latest.sleep_hours);
+    setTargetSbp(patient.ehr.systolic_bp);
+  }, [patient.ehr.patient_id, latest.day_index]);
+
+  useEffect(() => {
+    let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
+    const loadImportance = async (attempt = 0) => {
+      try {
+        const result = await fetchModelImportance();
+        if (cancelled) return;
+        setImportance(result.features);
+        setModelAuc(result.roc_auc);
+      } catch {
+        if (cancelled) return;
+        if (attempt < 5) retryTimer = setTimeout(() => void loadImportance(attempt + 1), 1500);
+      }
+    };
+    void loadImportance();
+    return () => {
+      cancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
+    };
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setSimLoading(true);
+    setSimError(false);
+    setSimPrediction(null);
+    const timer = setTimeout(() => {
+      predictRisk({
+        ...toModelFeatures(patient, latest, targetSbp),
+        hrv_mean: targetHrv,
+        resting_hr_mean: targetRhr,
+        sleep_hours: targetSleep,
+        hrv_drop_from_baseline: (patient.telemetry_series[0]?.hrv_mean ?? targetHrv) - targetHrv,
+        resting_hr_rise_from_baseline: targetRhr - (patient.telemetry_series[0]?.resting_hr_mean ?? targetRhr),
+        sleep_drop_from_baseline: (patient.telemetry_series[0]?.sleep_hours ?? targetSleep) - targetSleep,
+      }, controller.signal)
+        .then(setSimPrediction)
+        .catch((error: unknown) => {
+          if (!(error instanceof DOMException && error.name === 'AbortError')) setSimError(true);
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setSimLoading(false);
+        });
+    }, 180);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [patient, latest, targetHrv, targetRhr, targetSleep, targetSbp]);
+
+  const simRiskPercent = simPrediction ? (simPrediction.risk_score * 100).toFixed(1) : '—';
   const currentRiskPercent = (latest.risk_score * 100).toFixed(1);
-  const deltaRisk = (simResult.score - latest.risk_score) * 100;
+  const deltaRisk = simPrediction ? (simPrediction.risk_score - latest.risk_score) * 100 : null;
 
   return (
     <div className="flex flex-col gap-3">
@@ -65,49 +99,52 @@ export const ExplainabilityCol: React.FC<ExplainabilityColProps> = ({
         <div className="flex items-center gap-2">
           <Cpu className="w-4 h-4 text-emerald-400" />
           <h3 className="text-xs uppercase font-bold tracking-wider text-[#F2F4F6]">
-            TWIN EXPLAINABILITY (XAI) & CDS ACTIONS
+            MODEL OUTPUT & CLINICAL DECISION SUPPORT
           </h3>
         </div>
-        <span className="text-[10px] font-mono text-emerald-400">RF ENSEMBLE (AUC 0.801)</span>
+        <span className={`text-[10px] font-mono ${modelConnected ? 'text-emerald-400' : 'text-amber-400'}`}>
+          {modelConnected ? `BACKEND RANDOM FOREST${modelAuc === null ? '' : ` · AUC ${modelAuc.toFixed(3)}`}` : 'DEMO SCORES · API OFFLINE'}
+        </span>
       </div>
 
-      {/* SHAP Feature Attribution Waterfall */}
+      {/* Global model feature importance */}
       <div className="rounded-[4px] border border-[#323D57] bg-[#131B2E] p-3">
         <div className="flex items-center justify-between mb-2">
           <div className="text-[10px] uppercase tracking-wider font-semibold text-[#9EA4B5]">
-            SHAP WATERFALL // ACUTE RISK BIOMARKER DRIVERS
+            GLOBAL MODEL FEATURE IMPORTANCE
           </div>
-          <span className="text-[9px] font-mono text-[#9EA4B5]">SORTED BY IMPACT</span>
+          <span className="text-[9px] font-mono text-[#9EA4B5]">RANDOM FOREST SPLITS</span>
         </div>
 
         <div className="space-y-2 mt-1">
-          {shapDrivers.map((driver, idx) => {
-            const isElevate = driver.direction === 'elevate';
+          {importance.slice(0, 6).map((driver, idx) => {
+            const label = driver.feature.replaceAll('_', ' ');
             return (
-              <div key={idx} className="bg-[#161E31] p-2 rounded-[2px] border border-[#323D57]/50">
+              <div key={driver.feature} className="bg-[#161E31] p-2 rounded-[2px] border border-[#323D57]/50">
                 <div className="flex items-center justify-between text-xs font-mono mb-1">
                   <span className="font-semibold text-[#F2F4F6] truncate pr-2">
-                    {driver.label}
+                    {label}
                   </span>
-                  <span className={`font-bold shrink-0 ${isElevate ? 'text-red-400' : 'text-emerald-400'}`}>
-                    {isElevate ? `+${driver.impact_percent}%` : `-${driver.impact_percent}%`}
+                  <span className="font-bold shrink-0 text-sky-300">
+                    {(driver.importance * 100).toFixed(1)}%
                   </span>
                 </div>
 
                 {/* Contribution visual bar */}
                 <div className="w-full h-1.5 bg-[#0A0E18] rounded-[2px] overflow-hidden mb-1">
                   <div
-                    className={`h-full rounded-[1px] ${isElevate ? 'bg-red-500' : 'bg-emerald-500'}`}
-                    style={{ width: `${Math.min(100, driver.impact_percent * 2.5)}%` }}
+                    className="h-full rounded-[1px] bg-sky-500"
+                    style={{ width: `${Math.min(100, driver.importance * 500)}%` }}
                   />
                 </div>
 
                 <div className="text-[9px] text-[#9EA4B5] font-sans italic">
-                  {driver.clinical_note}
+                  Global contribution to tree impurity reduction; does not show this patient’s direction of effect.
                 </div>
               </div>
             );
           })}
+          {importance.length === 0 && <div className="text-[10px] text-amber-400">Model importance unavailable while backend is offline.</div>}
         </div>
       </div>
 
@@ -119,7 +156,7 @@ export const ExplainabilityCol: React.FC<ExplainabilityColProps> = ({
             "WHAT-IF" COUNTERFACTUAL INTERVENTION SANDBOX
           </div>
           <span className="text-[9px] font-mono bg-amber-950/60 text-amber-300 px-1.5 py-0.2 border border-amber-500/40 rounded-[2px]">
-            SIMULATED
+            BACKEND INFERENCE
           </span>
         </div>
 
@@ -201,26 +238,27 @@ export const ExplainabilityCol: React.FC<ExplainabilityColProps> = ({
         {/* Dynamic Simulation Result Card */}
         <div className="mt-3 p-2 bg-[#0A0E18] rounded-[2px] border border-[#323D57] flex items-center justify-between">
           <div>
-            <div className="text-[9px] uppercase tracking-wider text-[#9EA4B5]">SIMULATED 24-48H RISK</div>
+            <div className="text-[9px] uppercase tracking-wider text-[#9EA4B5]">MODEL 24H RISK</div>
+            {simError && <div className="text-[9px] text-amber-400">Backend inference unavailable</div>}
             <div className="flex items-baseline gap-2">
               <span className="text-lg font-bold font-mono text-[#F2F4F6]">
-                {simRiskPercent}%
+                {simLoading ? 'SCORING…' : `${simRiskPercent}${simPrediction ? '%' : ''}`}
               </span>
-              <span className={`text-[10px] font-mono font-bold ${deltaRisk < 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              {deltaRisk !== null && <span className={`text-[10px] font-mono font-bold ${deltaRisk < 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                 {deltaRisk < 0 ? `${deltaRisk.toFixed(1)}%` : `+${deltaRisk.toFixed(1)}%`}
-              </span>
+              </span>}
             </div>
           </div>
 
           <div className="text-right">
             <span className={`text-[9px] font-mono uppercase px-1.5 py-0.5 rounded-[12px] border font-bold ${
-              simResult.state === 'decompensation'
+              simPrediction?.state === 'decompensation'
                 ? 'bg-red-950/60 text-red-300 border-red-500/40'
-                : simResult.state === 'strain'
+                : simPrediction?.state === 'strain'
                 ? 'bg-amber-950/60 text-amber-300 border-amber-500/40'
                 : 'bg-emerald-950/60 text-emerald-300 border-emerald-500/40'
             }`}>
-              {simResult.state.toUpperCase()}
+              {simLoading ? 'SCORING' : simPrediction?.state.toUpperCase() ?? 'UNAVAILABLE'}
             </span>
           </div>
         </div>

@@ -10,12 +10,14 @@ interface WearableTelemetryColProps {
   patient: PatientProfile;
   activeDay: number;
   onSelectDay: (day: number) => void;
+  modelConnected: boolean;
 }
 
 export const WearableTelemetryCol: React.FC<WearableTelemetryColProps> = ({
   patient,
   activeDay,
   onSelectDay,
+  modelConnected,
 }) => {
   const [visualMode, setVisualMode] = useState<'native' | 'embed'>('native');
 
@@ -31,12 +33,12 @@ export const WearableTelemetryCol: React.FC<WearableTelemetryColProps> = ({
         <div className="flex items-center gap-2">
           <Smartphone className="w-4 h-4 text-emerald-400" />
           <h3 className="text-xs uppercase font-bold tracking-wider text-[#F2F4F6]">
-            DYNAMIC WEARABLE TELEMETRY (LIVE STREAM)
+            PATIENT WEARABLE TELEMETRY
           </h3>
         </div>
-        <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-          BLE STREAM ACTIVE
+        <span className={`text-[10px] font-mono flex items-center gap-1 ${modelConnected ? 'text-emerald-400' : 'text-amber-400'}`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${modelConnected ? 'bg-emerald-400 animate-ping' : 'bg-amber-400'}`} />
+          {modelConnected ? 'MODEL SCORED' : 'BUNDLED DEMO DATA'}
         </span>
       </div>
 

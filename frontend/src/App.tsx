@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { INITIAL_COHORT, COHORT_STATS, SHAP_EXPLANATION_RAVI } from './data/cohortData';
 import { PatientProfile } from './types/clinical';
 import { Header } from './components/Header';
 import { PatientBanner } from './components/PatientBanner';
@@ -11,13 +10,17 @@ import { RecordIntakeModal } from './components/RecordIntakeModal';
 import { CallModal } from './components/modals/CallModal';
 import { OrderModal } from './components/modals/OrderModal';
 import { FhirModal } from './components/modals/FhirModal';
+import { fetchPatients, savePatient } from './data/riskApi';
 
 export function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('cardiotwin-theme') !== 'light');
-  const [cohort, setCohort] = useState<PatientProfile[]>(INITIAL_COHORT);
+  const [cohort, setCohort] = useState<PatientProfile[]>([]);
+  const [cohortLoading, setCohortLoading] = useState(true);
+  const [cohortError, setCohortError] = useState(false);
   const [selectedPatientId, setSelectedPatientId] = useState<number>(101);
   const [currentView, setCurrentView] = useState<'cohort' | 'detail'>('detail');
   const [activeDay, setActiveDay] = useState<number>(7);
+  const [modelConnected, setModelConnected] = useState(false);
 
   // Modals state
   const [isDataIntakeOpen, setIsDataIntakeOpen] = useState(false);
@@ -27,6 +30,14 @@ export function App() {
 
   // Active patient object
   const activePatient = cohort.find((p) => p.ehr.patient_id === selectedPatientId) || cohort[0];
+  const currentStats = {
+    total_monitored: cohort.length,
+    critical_count: cohort.filter((patient) => patient.latest_telemetry.state === 'decompensation').length,
+    warning_count: cohort.filter((patient) => patient.latest_telemetry.state === 'strain').length,
+    stable_count: cohort.filter((patient) => patient.latest_telemetry.state === 'homeostasis').length,
+    avg_risk: cohort.length ? cohort.reduce((sum, patient) => sum + patient.latest_telemetry.risk_score, 0) / cohort.length : 0,
+    sync_uptime_pct: cohort.length ? cohort.reduce((sum, patient) => sum + patient.hardware.ble_fidelity, 0) / cohort.length : 0,
+  };
 
   useEffect(() => {
     const theme = isDarkMode ? 'dark' : 'light';
@@ -35,20 +46,55 @@ export function App() {
     localStorage.setItem('cardiotwin-theme', theme);
   }, [isDarkMode]);
 
+  useEffect(() => {
+    let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
+    const loadCohort = async (attempt = 0) => {
+      try {
+        const patients = await fetchPatients();
+        if (cancelled) return;
+        setCohort(patients);
+        setModelConnected(true);
+        setCohortError(false);
+        setCohortLoading(false);
+      } catch (error) {
+        if (cancelled) return;
+        console.error('Backend patient load failed.', error);
+        if (attempt < 5) retryTimer = setTimeout(() => void loadCohort(attempt + 1), 1500);
+        else {
+          setCohortError(true);
+          setCohortLoading(false);
+        }
+      }
+    };
+    void loadCohort();
+    return () => {
+      cancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
+    };
+  }, []);
+
   // Callback when a new record or patient is submitted through the multi-modal intake
-  const handleRecordAdded = (updatedProfile: PatientProfile) => {
+  const handleRecordAdded = async (updatedProfile: PatientProfile) => {
+    const savedProfile = await savePatient(updatedProfile);
     setCohort((prev) => {
-      const exists = prev.some((p) => p.ehr.patient_id === updatedProfile.ehr.patient_id);
+      const exists = prev.some((p) => p.ehr.patient_id === savedProfile.ehr.patient_id);
       if (exists) {
-        return prev.map((p) => (p.ehr.patient_id === updatedProfile.ehr.patient_id ? updatedProfile : p));
+        return prev.map((p) => (p.ehr.patient_id === savedProfile.ehr.patient_id ? savedProfile : p));
       } else {
-        return [updatedProfile, ...prev];
+        return [savedProfile, ...prev];
       }
     });
-    setSelectedPatientId(updatedProfile.ehr.patient_id);
-    setActiveDay(updatedProfile.current_day);
+    setSelectedPatientId(savedProfile.ehr.patient_id);
+    setActiveDay(savedProfile.current_day);
     setCurrentView('detail');
   };
+
+  if (!activePatient) {
+    return <div className="min-h-screen bg-[#0A0E18] text-[#F2F4F6] flex items-center justify-center font-mono text-sm">
+      {cohortLoading ? 'Loading patient records from backend…' : cohortError ? 'Could not load patient records. Check the backend API and refresh.' : 'No patient records are available.'}
+    </div>;
+  }
 
   return (
     <div className="min-h-screen bg-[#0A0E18] text-[#F2F4F6] flex flex-col font-sans selection:bg-[#323D57]">
@@ -68,7 +114,7 @@ export function App() {
           /* View 1: Doctor's Cohort Triage Dashboard */
           <CohortView
             cohort={cohort}
-            stats={COHORT_STATS}
+            stats={currentStats}
             onSelectPatient={(pid) => {
               setSelectedPatientId(pid);
               const p = cohort.find((item) => item.ehr.patient_id === pid);
@@ -85,6 +131,7 @@ export function App() {
               patient={activePatient}
               activeDay={activeDay}
               onDayChange={setActiveDay}
+              modelConnected={modelConnected}
             />
 
             {/* 3-Column Diagnostic Workstation Layout */}
@@ -94,6 +141,7 @@ export function App() {
                 patient={activePatient}
                 activeDay={activeDay}
                 onSelectDay={setActiveDay}
+                modelConnected={modelConnected}
               />
 
               {/* Column 2: Static EHR Baseline & Laboratory Profile */}
@@ -102,7 +150,7 @@ export function App() {
               {/* Column 3: Twin Model Explainability & Clinical Decision Support */}
               <ExplainabilityCol
                 patient={activePatient}
-                shapDrivers={SHAP_EXPLANATION_RAVI}
+                modelConnected={modelConnected}
                 onTriggerCall={() => setIsCallModalOpen(true)}
                 onOrderStat={() => setIsOrderModalOpen(true)}
                 onExportFhir={() => setIsFhirModalOpen(true)}

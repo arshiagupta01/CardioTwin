@@ -7,12 +7,14 @@ interface PatientBannerProps {
   patient: PatientProfile;
   activeDay: number;
   onDayChange: (day: number) => void;
+  modelConnected: boolean;
 }
 
 export const PatientBanner: React.FC<PatientBannerProps> = ({
   patient,
   activeDay,
   onDayChange,
+  modelConnected,
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const currentTelemetry = patient.telemetry_series.find((d) => d.day_index === activeDay) || patient.latest_telemetry;
@@ -38,7 +40,7 @@ export const PatientBanner: React.FC<PatientBannerProps> = ({
         border: 'border-red-500/40',
         text: 'text-red-700 dark:text-red-400',
         chipBg: 'bg-[#FFDAD6] text-[#93000A] dark:bg-[#7F1D1D]/50 dark:text-[#F87171] dark:border-[#DC2626]/40',
-        label: 'ACUTE DECOMPENSATION HORIZON (24–48H)',
+        label: 'ACUTE RISK STATE (24H MODEL)',
         icon: AlertTriangle,
       }
     : isStrain
@@ -95,10 +97,13 @@ export const PatientBanner: React.FC<PatientBannerProps> = ({
           <div className="flex items-center gap-3 pl-3 border-l border-[#323D57]">
             <div className="text-right">
               <div className="text-[9px] uppercase tracking-wider text-[#9EA4B5] font-semibold">
-                24–48h EVENT PROBABILITY
+                24H MODEL RISK
               </div>
               <div className={`text-2xl font-bold font-mono tracking-tight leading-none ${stateTheme.text}`}>
                 {riskPercent}%
+              </div>
+              <div className={`text-[8px] uppercase font-mono ${modelConnected ? 'text-emerald-400' : 'text-amber-400'}`}>
+                {modelConnected ? 'BACKEND MODEL' : 'DEMO SCORES'}
               </div>
             </div>
 

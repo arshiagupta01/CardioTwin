@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { PatientProfile, DayTelemetry } from '../types/clinical';
-import { evaluateRiskScore } from '../data/cohortData';
 import { X, PlusCircle, Smartphone, Activity, FileText, CheckCircle2, RefreshCw, Sparkles, ShieldCheck, AlertTriangle } from 'lucide-react';
 
 interface RecordIntakeModalProps {
   cohort: PatientProfile[];
   isOpen: boolean;
   onClose: () => void;
-  onRecordAdded: (newProfile: PatientProfile) => void;
+  onRecordAdded: (newProfile: PatientProfile) => Promise<void> | void;
 }
 
 export const RecordIntakeModal: React.FC<RecordIntakeModalProps> = ({
@@ -132,26 +131,8 @@ export const RecordIntakeModal: React.FC<RecordIntakeModalProps> = ({
     const sleepDrop = baseline.sleep_hours - sleepHours;
     const stepDrop = baseline.daily_steps - steps;
 
-    const localEvaluation = evaluateRiskScore({
-      age: currentPatient.ehr.age,
-      sex: currentPatient.ehr.sex === 'M' ? 1 : 0,
-      bmi: currentPatient.ehr.bmi,
-      systolic_bp: systolicBp,
-      diastolic_bp: diastolicBp,
-      cholesterol: cholesterol,
-      family_history: currentPatient.ehr.family_history,
-      smoker: currentPatient.ehr.smoker,
-      diabetes: currentPatient.ehr.diabetes,
-      hrv_mean: hrv,
-      resting_hr_mean: restingHr,
-      sleep_hours: sleepHours,
-      sleep_efficiency: sleepEfficiency,
-      daily_steps: steps,
-      hrv_drop_from_baseline: hrvDrop,
-      resting_hr_rise_from_baseline: restingHrRise,
-    });
-
-    let evaluation = localEvaluation;
+    let riskScore: number;
+    let riskState: DayTelemetry['state'];
     try {
       const response = await fetch('/api/risk', {
         method: 'POST',
@@ -180,12 +161,13 @@ export const RecordIntakeModal: React.FC<RecordIntakeModalProps> = ({
         }),
       });
       if (!response.ok) throw new Error('Backend inference failed');
-      const result: { risk_score: number; state: typeof localEvaluation.state } = await response.json();
-      evaluation = { ...localEvaluation, score: result.risk_score, state: result.state };
+      const result: { risk_score: number; state: DayTelemetry['state'] } = await response.json();
+      riskScore = result.risk_score;
+      riskState = result.state;
     } catch {
-      setInferenceMessage('Backend unavailable; saved using the local risk estimate.');
-    } finally {
+      setInferenceMessage('Backend inference failed. The record was not saved. Check the API and retry.');
       setIsSubmitting(false);
+      return;
     }
 
     const newDayIndex = currentPatient.telemetry_series.length + 1;
@@ -199,9 +181,9 @@ export const RecordIntakeModal: React.FC<RecordIntakeModalProps> = ({
       sleep_efficiency: sleepEfficiency,
       daily_steps: steps,
       activity_score: activityScore,
-      risk_event_next_24h: evaluation.state === 'decompensation' ? 1 : 0,
-      risk_score: evaluation.score,
-      state: evaluation.state,
+      risk_event_next_24h: riskState === 'decompensation' ? 1 : 0,
+      risk_score: riskScore,
+      state: riskState,
       hrv_drop_from_baseline: hrvDrop,
       resting_hr_rise_from_baseline: restingHrRise,
       sleep_drop_from_baseline: sleepDrop,
@@ -222,9 +204,15 @@ export const RecordIntakeModal: React.FC<RecordIntakeModalProps> = ({
       telemetry_series: [...currentPatient.telemetry_series, newDayRecord],
     };
 
-    setFormFromPatient(updatedProfile);
-    onRecordAdded(updatedProfile);
-    onClose();
+    try {
+      await onRecordAdded(updatedProfile);
+      setFormFromPatient(updatedProfile);
+      onClose();
+    } catch {
+      setInferenceMessage('The model scored this record, but the backend could not save it. Retry the submission.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

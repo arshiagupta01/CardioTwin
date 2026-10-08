@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { PatientProfile } from '../types/clinical';
 import { fetchModelImportance, ModelImportance, predictRisk, toModelFeatures, ModelPrediction } from '../data/riskApi';
-import { Cpu, Sliders, PhoneCall, Stethoscope, Download, ArrowRight, Check, AlertCircle, Wifi, WifiOff } from 'lucide-react';
+import { Cpu, Sliders, PhoneCall, Stethoscope, Download, ArrowRight, Check, AlertCircle, Wifi, WifiOff, FileText, CheckSquare, Square } from 'lucide-react';
+import { ClinicalTooltip } from './ClinicalTooltip';
 
 interface ExplainabilityColProps {
   patient: PatientProfile;
@@ -9,6 +10,7 @@ interface ExplainabilityColProps {
   onTriggerCall: () => void;
   onOrderStat: () => void;
   onExportFhir: () => void;
+  onOpenReportModal?: () => void;
 }
 
 export const ExplainabilityCol: React.FC<ExplainabilityColProps> = ({
@@ -17,7 +19,9 @@ export const ExplainabilityCol: React.FC<ExplainabilityColProps> = ({
   onTriggerCall,
   onOrderStat,
   onExportFhir,
+  onOpenReportModal,
 }) => {
+
   // Counterfactual What-If Intervention Sandbox State
   const latest = patient.latest_telemetry;
   const [targetHrv, setTargetHrv] = useState(latest.hrv_mean);
@@ -270,6 +274,17 @@ export const ExplainabilityCol: React.FC<ExplainabilityColProps> = ({
           CLINICAL ACTION PROTOCOLS (1-CLICK CDS)
         </div>
 
+        {/* Primary Report Export Button */}
+        {onOpenReportModal && (
+          <button
+            onClick={onOpenReportModal}
+            className="w-full py-2 px-3 bg-emerald-600/90 hover:bg-emerald-500 text-white rounded-[2px] text-xs font-mono font-bold flex items-center justify-center gap-2 transition-all border border-emerald-400/30 shadow-sm active:scale-[0.99]"
+          >
+            <FileText className="w-3.5 h-3.5 text-white" />
+            <span>EXPORT CLINICAL REPORT (PDF / PRINT)</span>
+          </button>
+        )}
+
         <button
           onClick={onTriggerCall}
           className="w-full py-2 px-3 bg-red-900/60 hover:bg-red-800/70 text-red-100 border border-red-500/60 rounded-[2px] text-xs font-mono font-bold flex items-center justify-center gap-2 transition-all active:scale-[0.99]"
@@ -294,6 +309,31 @@ export const ExplainabilityCol: React.FC<ExplainabilityColProps> = ({
             <Download className="w-3 h-3 text-sky-400" />
             <span>EXPORT HL7 FHIR</span>
           </button>
+        </div>
+
+        {/* Suggested Clinical Checklist */}
+        <div className="mt-2 pt-2 border-t border-[#323D57]/60">
+          <div className="text-[9px] uppercase tracking-wider font-semibold text-[#9EA4B5] mb-1.5">
+            SUGGESTED CLINICAL PROTOCOL (AHA/ACC)
+          </div>
+          <div className="space-y-1 text-[11px] text-[#9EA4B5] font-sans">
+            <label className="flex items-center gap-2 cursor-pointer hover:text-[#F2F4F6]">
+              <input type="checkbox" defaultChecked className="accent-emerald-500 rounded-sm" />
+              <span>STAT Troponin-I & NT-proBNP draw</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer hover:text-[#F2F4F6]">
+              <input type="checkbox" defaultChecked className="accent-emerald-500 rounded-sm" />
+              <span>12-Lead ECG for ischemic conduction changes</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer hover:text-[#F2F4F6]">
+              <input type="checkbox" className="accent-emerald-500 rounded-sm" />
+              <span>Telehealth nurse vitals verification</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer hover:text-[#F2F4F6]">
+              <input type="checkbox" className="accent-emerald-500 rounded-sm" />
+              <span>Optimize neurohormonal blockade regimen</span>
+            </label>
+          </div>
         </div>
       </div>
     </div>

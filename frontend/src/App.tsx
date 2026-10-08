@@ -10,6 +10,7 @@ import { RecordIntakeModal } from './components/RecordIntakeModal';
 import { CallModal } from './components/modals/CallModal';
 import { OrderModal } from './components/modals/OrderModal';
 import { FhirModal } from './components/modals/FhirModal';
+import { ClinicalReportModal } from './components/modals/ClinicalReportModal';
 import { fetchPatients, savePatient } from './data/riskApi';
 
 export function App() {
@@ -27,6 +28,8 @@ export function App() {
   const [isCallModalOpen, setIsCallModalOpen] = useState(false);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [isFhirModalOpen, setIsFhirModalOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+
 
   // Active patient object
   const activePatient = cohort.find((p) => p.ehr.patient_id === selectedPatientId) || cohort[0];
@@ -132,6 +135,7 @@ export function App() {
               activeDay={activeDay}
               onDayChange={setActiveDay}
               modelConnected={modelConnected}
+              onOpenReportModal={() => setIsReportModalOpen(true)}
             />
 
             {/* 3-Column Diagnostic Workstation Layout */}
@@ -154,6 +158,7 @@ export function App() {
                 onTriggerCall={() => setIsCallModalOpen(true)}
                 onOrderStat={() => setIsOrderModalOpen(true)}
                 onExportFhir={() => setIsFhirModalOpen(true)}
+                onOpenReportModal={() => setIsReportModalOpen(true)}
               />
             </div>
           </div>
@@ -184,6 +189,13 @@ export function App() {
         patient={activePatient}
         isOpen={isFhirModalOpen}
         onClose={() => setIsFhirModalOpen(false)}
+      />
+
+      <ClinicalReportModal
+        patient={activePatient}
+        activeDay={activeDay}
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
       />
     </div>
   );

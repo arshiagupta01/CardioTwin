@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { PatientProfile, CohortStats, RiskState } from '../types/clinical';
-import { Search, AlertTriangle, ShieldCheck, Activity, Users, Radio, ChevronRight, PlusCircle, ArrowUpDown, BellRing, Zap } from 'lucide-react';
+import { Search, AlertTriangle, ShieldCheck, Activity, Users, Radio, ChevronRight, PlusCircle, ArrowUpDown, BellRing, Zap, RefreshCw } from 'lucide-react';
 import { PatientAvatar } from './PatientAvatar';
 
 // ── Early-Warning Alert Panel ──────────────────────────────────────────────────
@@ -78,6 +78,7 @@ interface CohortViewProps {
   stats: CohortStats;
   onSelectPatient: (patientId: number) => void;
   onOpenDataIntake: () => void;
+  onRefresh?: () => void;
 }
 
 export const CohortView: React.FC<CohortViewProps> = ({
@@ -85,9 +86,10 @@ export const CohortView: React.FC<CohortViewProps> = ({
   stats,
   onSelectPatient,
   onOpenDataIntake,
+  onRefresh,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState<'all' | 'critical' | 'strain' | 'stable'>('all');
+  const [selectedFilter, setSelectedFilter] = useState<'all' | 'critical' | 'strain' | 'stable' | 'hypertension' | 'cardiovascular'>('all');
   const [sortBy, setSortBy] = useState<'risk' | 'id' | 'name'>('risk');
 
   // Filter patients
@@ -103,6 +105,8 @@ export const CohortView: React.FC<CohortViewProps> = ({
     if (selectedFilter === 'critical') return latest.state === 'decompensation' || latest.risk_score >= 0.65;
     if (selectedFilter === 'strain') return latest.state === 'strain' || (latest.risk_score >= 0.25 && latest.risk_score < 0.65);
     if (selectedFilter === 'stable') return latest.state === 'homeostasis' && latest.risk_score < 0.25;
+    if (selectedFilter === 'hypertension') return p.ehr.diagnosis.toLowerCase().includes('hypertension');
+    if (selectedFilter === 'cardiovascular') return p.ehr.diagnosis.toLowerCase().includes('cardiovascular');
     return true;
   });
 
@@ -194,7 +198,7 @@ export const CohortView: React.FC<CohortViewProps> = ({
           </div>
           <div className="mt-2 flex items-baseline gap-2">
             <span className="text-2xl font-bold font-mono text-emerald-400">
-              {stats.sync_uptime_pct}%
+              {typeof stats.sync_uptime_pct === 'number' ? stats.sync_uptime_pct.toFixed(1) : stats.sync_uptime_pct}%
             </span>
             <span className="text-[10px] font-mono text-[#9EA4B5]">BLE LIVE SYNC</span>
           </div>
@@ -217,7 +221,7 @@ export const CohortView: React.FC<CohortViewProps> = ({
         </div>
 
         {/* Filter Pills */}
-        <div className="flex items-center gap-1 font-mono text-[10px]">
+        <div className="flex items-center gap-1 font-mono text-[10px] flex-wrap">
           <button
             onClick={() => setSelectedFilter('all')}
             className={`px-2.5 py-1 rounded-[2px] border transition-colors ${
@@ -237,7 +241,7 @@ export const CohortView: React.FC<CohortViewProps> = ({
                 : 'border-[#323D57] text-red-400/80 hover:text-red-300'
             }`}
           >
-            CRITICAL ({cohort.filter((p) => p.latest_telemetry.state === 'decompensation').length})
+            CRITICAL ({stats.critical_count})
           </button>
 
           <button
@@ -248,7 +252,7 @@ export const CohortView: React.FC<CohortViewProps> = ({
                 : 'border-[#323D57] text-amber-400/80 hover:text-amber-300'
             }`}
           >
-            STRAIN ({cohort.filter((p) => p.latest_telemetry.state === 'strain').length})
+            STRAIN ({stats.warning_count})
           </button>
 
           <button
@@ -259,18 +263,53 @@ export const CohortView: React.FC<CohortViewProps> = ({
                 : 'border-[#323D57] text-emerald-400/80 hover:text-emerald-300'
             }`}
           >
-            STABLE ({cohort.filter((p) => p.latest_telemetry.state === 'homeostasis').length})
+            STABLE ({stats.stable_count})
+          </button>
+
+          <button
+            onClick={() => setSelectedFilter('hypertension')}
+            className={`px-2.5 py-1 rounded-[2px] border transition-colors ${
+              selectedFilter === 'hypertension'
+                ? 'bg-blue-950/70 border-blue-500 text-blue-300 font-bold'
+                : 'border-[#323D57] text-blue-400/80 hover:text-blue-300'
+            }`}
+          >
+            HYPERTENSION ({stats.hypertension_count ?? 0})
+          </button>
+
+          <button
+            onClick={() => setSelectedFilter('cardiovascular')}
+            className={`px-2.5 py-1 rounded-[2px] border transition-colors ${
+              selectedFilter === 'cardiovascular'
+                ? 'bg-purple-950/70 border-purple-500 text-purple-300 font-bold'
+                : 'border-[#323D57] text-purple-400/80 hover:text-purple-300'
+            }`}
+          >
+            CARDIO RISK ({stats.cardiovascular_risk_count ?? 0})
           </button>
         </div>
 
-        {/* Action Button: Add New Record */}
-        <button
-          onClick={onOpenDataIntake}
-          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-[2px] text-xs font-mono font-bold flex items-center gap-1.5 shadow-none transition-colors"
-        >
-          <PlusCircle className="w-3.5 h-3.5" />
-          <span>ADD NEW RECORD / TELEMETRY</span>
-        </button>
+        {/* Action Buttons: Refresh & Add Record */}
+        <div className="flex items-center gap-2">
+          {onRefresh && (
+            <button
+              onClick={onRefresh}
+              className="px-2.5 py-1.5 bg-[#161E31] hover:bg-[#1C263D] border border-[#323D57] hover:border-[#7C839B] text-[#F2F4F6] rounded-[2px] text-xs font-mono font-bold flex items-center gap-1.5 transition-colors"
+              title="Refresh Cohort Telemetry from Backend"
+            >
+              <RefreshCw className="w-3.5 h-3.5 text-[#9EA4B5]" />
+              <span>SYNC REFRESH</span>
+            </button>
+          )}
+
+          <button
+            onClick={onOpenDataIntake}
+            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-[2px] text-xs font-mono font-bold flex items-center gap-1.5 shadow-none transition-colors"
+          >
+            <PlusCircle className="w-3.5 h-3.5" />
+            <span>ADD NEW RECORD / TELEMETRY</span>
+          </button>
+        </div>
       </div>
 
       {/* Patient Triage Table */}

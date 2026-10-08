@@ -506,10 +506,13 @@ function generateDecompensationSeries(pid: number, hrvBase: number, rhrBase: num
 
 export const COHORT_STATS: CohortStats = {
   total_monitored: 200,
-  critical_count: 14,
-  warning_count: 38,
-  stable_count: 148,
-  avg_risk: 0.248,
+  critical_count: 54,
+  warning_count: 40,
+  stable_count: 106,
+  hypertension_count: 161,
+  cardiovascular_risk_count: 39,
+  diabetic_count: 58,
+  avg_risk: 0.385,
   sync_uptime_pct: 98.4
 };
 

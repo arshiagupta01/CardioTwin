@@ -11,11 +11,13 @@ ENV/
 .ipynb_checkpoints/
 
 # Project outputs
-models/
+/models/
 !models/.gitkeep
 
-data/
+/data/
 !data/.gitkeep
+*.sqlite3
+*.db
 
 # OS
 .DS_Store

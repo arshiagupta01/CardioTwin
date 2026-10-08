@@ -146,7 +146,18 @@ def _seed_patient_db(connection: sqlite3.Connection) -> None:
                 "sleep_drop_from_baseline": float(day["sleep_drop_from_baseline"]),
                 "step_drop_from_baseline": float(day["step_drop_from_baseline"]),
             })
-        latest = telemetry[-1]
+        # In a real telemetry cohort, patients are currently at different days of their monitoring window.
+        # Distribute active clinical days across patients so the cohort roster has realistic active critical, strain, and stable states.
+        event_days = [d for d in telemetry if d["risk_score"] >= 0.65]
+        strain_days = [d for d in telemetry if d["risk_score"] >= 0.25]
+
+        if patient_id % 5 == 0 and event_days:
+            latest = event_days[0]
+        elif patient_id % 3 == 0 and strain_days:
+            latest = strain_days[0]
+        else:
+            latest = telemetry[-1]
+
         profiles.append({
             "ehr": ehr,
             "current_day": latest["day_index"],
@@ -166,6 +177,7 @@ def _seed_patient_db(connection: sqlite3.Connection) -> None:
         [(profile["ehr"]["patient_id"], json.dumps(profile)) for profile in profiles],
     )
     connection.commit()
+
 
 
 def _read_profiles() -> list[dict]:

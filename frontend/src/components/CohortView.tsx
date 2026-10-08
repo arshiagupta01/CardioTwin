@@ -8,22 +8,24 @@ const EarlyWarningPanel: React.FC<{
   cohort: PatientProfile[];
   onSelectPatient: (id: number) => void;
 }> = ({ cohort, onSelectPatient }) => {
-  const alerts = cohort.filter((p) => p.latest_telemetry.state === 'decompensation');
+  const alerts = cohort.filter(
+    (p) => p.latest_telemetry.state === 'decompensation' || p.latest_telemetry.risk_score >= 0.65
+  );
   if (alerts.length === 0) return null;
 
   return (
-    <div className="rounded-[4px] border border-red-500/60 bg-red-950/20 p-3">
+    <div className="rounded-[4px] border border-red-500/60 bg-red-950/20 p-3 shadow-lg">
       <div className="flex items-center gap-2 mb-2.5">
         <BellRing className="w-4 h-4 text-red-400 animate-pulse" />
         <span className="text-[10px] uppercase tracking-wider font-bold font-mono text-red-300">
           EARLY-WARNING ALERT SYSTEM — {alerts.length} PATIENT{alerts.length > 1 ? 'S' : ''} AT ACUTE DECOMPENSATION THRESHOLD
         </span>
-        <span className="ml-auto text-[9px] font-mono text-red-400/70 border border-red-500/30 px-1.5 py-0.5 rounded-[2px]">
-          24–48H HORIZON
+        <span className="ml-auto text-[9px] font-mono text-red-400/80 border border-red-500/40 px-1.5 py-0.5 rounded-[2px] bg-red-950/40 font-bold">
+          24–48H CRISIS HORIZON
         </span>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2 max-h-[320px] overflow-y-auto pr-1">
         {alerts.map((p) => {
           const t = p.latest_telemetry;
           const risk = (t.risk_score * 100).toFixed(1);
@@ -38,16 +40,16 @@ const EarlyWarningPanel: React.FC<{
           return (
             <div
               key={p.ehr.patient_id}
-              className="flex items-center justify-between bg-red-950/40 border border-red-500/40 rounded-[4px] p-2.5 gap-2 animate-pulse"
+              className="flex items-center justify-between bg-red-950/40 border border-red-500/40 rounded-[4px] p-2.5 gap-2 hover:border-red-400 transition-all"
             >
               <PatientAvatar patientId={p.ehr.patient_id} name={p.ehr.name} size="sm" />
               <div className="flex flex-col gap-0.5 min-w-0">
                 <div className="flex items-center gap-1.5 font-mono text-xs">
-                  <span className="text-[10px] bg-red-900/60 text-red-200 border border-red-500/40 px-1 rounded-[2px]">
+                  <span className="text-[10px] bg-red-900/60 text-red-200 border border-red-500/40 px-1 rounded-[2px] font-bold">
                     PT-{p.ehr.patient_id}
                   </span>
                   <span className="font-semibold text-red-100 truncate">{p.ehr.name}</span>
-                  <span className="text-[10px] text-red-300 font-bold">{risk}%</span>
+                  <span className="text-[10px] text-red-300 font-bold ml-auto">{risk}%</span>
                 </div>
                 <div className="flex items-center gap-1 text-[9px] font-mono text-red-300/80 truncate">
                   <Zap className="w-2.5 h-2.5 text-red-400 shrink-0" />
@@ -57,7 +59,7 @@ const EarlyWarningPanel: React.FC<{
               </div>
               <button
                 onClick={() => onSelectPatient(p.ehr.patient_id)}
-                className="shrink-0 px-2 py-1 bg-red-700/60 hover:bg-red-600/70 border border-red-400/60 text-red-100 text-[10px] font-mono font-bold rounded-[2px] flex items-center gap-1 transition-colors"
+                className="shrink-0 px-2 py-1 bg-red-700/80 hover:bg-red-600 border border-red-400/60 text-red-100 text-[10px] font-mono font-bold rounded-[2px] flex items-center gap-1 transition-colors"
               >
                 INSPECT
                 <ChevronRight className="w-3 h-3" />
@@ -98,9 +100,9 @@ export const CohortView: React.FC<CohortViewProps> = ({
 
     if (!matchesSearch) return false;
 
-    if (selectedFilter === 'critical') return latest.state === 'decompensation';
-    if (selectedFilter === 'strain') return latest.state === 'strain';
-    if (selectedFilter === 'stable') return latest.state === 'homeostasis';
+    if (selectedFilter === 'critical') return latest.state === 'decompensation' || latest.risk_score >= 0.65;
+    if (selectedFilter === 'strain') return latest.state === 'strain' || (latest.risk_score >= 0.25 && latest.risk_score < 0.65);
+    if (selectedFilter === 'stable') return latest.state === 'homeostasis' && latest.risk_score < 0.25;
     return true;
   });
 
@@ -113,14 +115,22 @@ export const CohortView: React.FC<CohortViewProps> = ({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Early-Warning Alert Panel — shown only when patients are in decompensation */}
+      {/* Early-Warning Alert Panel — shown when patients are in acute decompensation */}
       <EarlyWarningPanel cohort={cohort} onSelectPatient={onSelectPatient} />
 
-      {/* Top Banner & KPI Stat Cards */}
+      {/* Top Banner & KPI Stat Cards with Click-to-Filter Action */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {/* KPI 1: Monitored Cohort */}
-        <div className="rounded-[4px] border border-[#323D57] bg-[#131B2E] p-3 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-[#9EA4B5]">
+        <button
+          type="button"
+          onClick={() => setSelectedFilter('all')}
+          className={`rounded-[4px] border p-3 flex flex-col justify-between text-left transition-all ${
+            selectedFilter === 'all'
+              ? 'border-[#7C839B] bg-[#161E31] ring-1 ring-[#7C839B]'
+              : 'border-[#323D57] bg-[#131B2E] hover:border-[#7C839B]/60'
+          }`}
+        >
+          <div className="flex items-center justify-between text-[#9EA4B5] w-full">
             <span className="text-[10px] uppercase tracking-wider font-semibold">TOTAL MONITORED</span>
             <Users className="w-3.5 h-3.5" />
           </div>
@@ -130,11 +140,19 @@ export const CohortView: React.FC<CohortViewProps> = ({
             </span>
             <span className="text-[10px] font-mono text-emerald-400">ACTIVE TWINS</span>
           </div>
-        </div>
+        </button>
 
         {/* KPI 2: Critical Decompensation */}
-        <div className="rounded-[4px] border border-red-500/40 bg-red-950/20 p-3 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-red-300">
+        <button
+          type="button"
+          onClick={() => setSelectedFilter('critical')}
+          className={`rounded-[4px] border p-3 flex flex-col justify-between text-left transition-all ${
+            selectedFilter === 'critical'
+              ? 'border-red-400 bg-red-950/40 ring-1 ring-red-400'
+              : 'border-red-500/40 bg-red-950/20 hover:border-red-400/80'
+          }`}
+        >
+          <div className="flex items-center justify-between text-red-300 w-full">
             <span className="text-[10px] uppercase tracking-wider font-semibold">CRITICAL (NEXT 24–48H)</span>
             <AlertTriangle className="w-3.5 h-3.5 text-red-400 animate-pulse" />
           </div>
@@ -142,13 +160,21 @@ export const CohortView: React.FC<CohortViewProps> = ({
             <span className="text-2xl font-bold font-mono text-red-400">
               {stats.critical_count}
             </span>
-            <span className="text-[10px] font-mono text-red-300">ACUTE HORIZON</span>
+            <span className="text-[10px] font-mono text-red-300">ACUTE ALERTS</span>
           </div>
-        </div>
+        </button>
 
         {/* KPI 3: Autonomic Strain */}
-        <div className="rounded-[4px] border border-amber-500/40 bg-amber-950/20 p-3 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-amber-300">
+        <button
+          type="button"
+          onClick={() => setSelectedFilter('strain')}
+          className={`rounded-[4px] border p-3 flex flex-col justify-between text-left transition-all ${
+            selectedFilter === 'strain'
+              ? 'border-amber-400 bg-amber-950/40 ring-1 ring-amber-400'
+              : 'border-amber-500/40 bg-amber-950/20 hover:border-amber-400/80'
+          }`}
+        >
+          <div className="flex items-center justify-between text-amber-300 w-full">
             <span className="text-[10px] uppercase tracking-wider font-semibold">AUTONOMIC STRAIN</span>
             <Activity className="w-3.5 h-3.5 text-amber-400" />
           </div>
@@ -158,7 +184,7 @@ export const CohortView: React.FC<CohortViewProps> = ({
             </span>
             <span className="text-[10px] font-mono text-amber-300">EARLY DRIFT</span>
           </div>
-        </div>
+        </button>
 
         {/* KPI 4: Telemetry Uptime */}
         <div className="rounded-[4px] border border-[#323D57] bg-[#131B2E] p-3 flex flex-col justify-between">
@@ -174,6 +200,7 @@ export const CohortView: React.FC<CohortViewProps> = ({
           </div>
         </div>
       </div>
+
 
       {/* Cohort Control Bar: Search, Filters, and "Add New Record" Button */}
       <div className="rounded-[4px] border border-[#323D57] bg-[#131B2E] p-2.5 flex flex-wrap items-center justify-between gap-3">

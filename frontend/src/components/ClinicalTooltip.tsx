@@ -49,3 +49,4 @@ export const ClinicalTooltip: React.FC<ClinicalTooltipProps> = ({
     </span>
   );
 };
+

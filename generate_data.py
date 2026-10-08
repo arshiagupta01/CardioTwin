@@ -119,6 +119,19 @@ def build_dataset(num_patients: int = 500) -> tuple[pd.DataFrame, pd.DataFrame]:
     wearable_df = pd.concat(wearable_rows, ignore_index=True)
 
     combined = wearable_df.merge(ehr_df, on="patient_id", how="left")
+    combined["sex"] = combined["sex"].map({"M": 1, "F": 0})
+    combined = combined.sort_values(["patient_id", "day_index"]).reset_index(drop=True)
+
+    baseline_cols = ["hrv_mean", "sleep_hours", "sleep_efficiency", "daily_steps", "resting_hr_mean"]
+    for col in baseline_cols:
+        combined[f"{col}_baseline"] = combined.groupby("patient_id")[col].transform("first")
+        combined[f"{col}_delta_from_baseline"] = combined[col] - combined[f"{col}_baseline"]
+
+    combined["hrv_drop_from_baseline"] = combined["hrv_mean_baseline"] - combined["hrv_mean"]
+    combined["sleep_drop_from_baseline"] = combined["sleep_hours_baseline"] - combined["sleep_hours"]
+    combined["step_drop_from_baseline"] = combined["daily_steps_baseline"] - combined["daily_steps"]
+    combined["resting_hr_rise_from_baseline"] = combined["resting_hr_mean"] - combined["resting_hr_mean_baseline"]
+
     combined["risk_score_proxy"] = (
         (combined["resting_hr_mean"] - 70) * 0.7
         + (60 - combined["hrv_mean"]) * 0.9
@@ -129,6 +142,7 @@ def build_dataset(num_patients: int = 500) -> tuple[pd.DataFrame, pd.DataFrame]:
     )
 
     return ehr_df, combined
+
 
 
 def main() -> None:

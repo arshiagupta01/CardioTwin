@@ -91,6 +91,16 @@ def _seed_patient_db(connection: sqlite3.Connection) -> None:
     count = connection.execute("SELECT COUNT(*) FROM patients").fetchone()[0]
     if count:
         return
+    cohort_json = BASE_DIR / "data" / "cohort200.json"
+    if cohort_json.exists():
+        with open(cohort_json, "r", encoding="utf-8") as f:
+            profiles = json.load(f)
+        connection.executemany(
+            "INSERT INTO patients (patient_id, profile_json) VALUES (?, ?)",
+            [(profile["ehr"]["patient_id"], json.dumps(profile)) for profile in profiles],
+        )
+        connection.commit()
+        return
     if not MODEL_PATH.exists():
         raise HTTPException(status_code=503, detail="The trained risk model is not available")
 

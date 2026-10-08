@@ -38,15 +38,10 @@ export interface ModelImportance {
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 
 export async function fetchPatients(): Promise<PatientProfile[]> {
-  try {
-    const response = await fetch(`${API_BASE}/api/patients`);
-    if (!response.ok) throw new Error(`Patient API returned ${response.status}`);
-    const result: { patients: PatientProfile[] } = await response.json();
-    return result.patients;
-  } catch (error) {
-    console.warn('Backend API unavailable; serving bundled cohort profiles.', error);
-    return INITIAL_COHORT;
-  }
+  const response = await fetch(`${API_BASE}/api/patients`);
+  if (!response.ok) throw new Error(`Patient API returned ${response.status}`);
+  const result: { patients: PatientProfile[] } = await response.json();
+  return result.patients;
 }
 
 export async function savePatient(patient: PatientProfile): Promise<PatientProfile> {

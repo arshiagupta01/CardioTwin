@@ -68,6 +68,10 @@ export function App() {
 
   useEffect(() => {
     let cancelled = false;
+    let timer: number | undefined;
+    let attempt = 0;
+    const maxAttempts = 6;
+
     const loadCohort = async () => {
       try {
         const patients = await fetchPatients();
@@ -75,16 +79,23 @@ export function App() {
         if (patients && patients.length > 0) {
           setCohort(patients);
           setModelConnected(true);
+          return;
         }
       } catch (error) {
         if (cancelled) return;
-        console.warn('Backend API offline; running in standalone demo mode with bundled cohort.');
         setModelConnected(false);
       }
+
+      if (attempt < maxAttempts && !cancelled) {
+        attempt += 1;
+        timer = window.setTimeout(loadCohort, 2500);
+      }
     };
+
     void loadCohort();
     return () => {
       cancelled = true;
+      if (timer) clearTimeout(timer);
     };
   }, []);
 

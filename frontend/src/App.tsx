@@ -11,12 +11,13 @@ import { CallModal } from './components/modals/CallModal';
 import { OrderModal } from './components/modals/OrderModal';
 import { FhirModal } from './components/modals/FhirModal';
 import { ClinicalReportModal } from './components/modals/ClinicalReportModal';
+import { INITIAL_COHORT } from './data/cohortData';
 import { fetchPatients, savePatient } from './data/riskApi';
 
 export function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('cardiotwin-theme') !== 'light');
-  const [cohort, setCohort] = useState<PatientProfile[]>([]);
-  const [cohortLoading, setCohortLoading] = useState(true);
+  const [cohort, setCohort] = useState<PatientProfile[]>(INITIAL_COHORT);
+  const [cohortLoading, setCohortLoading] = useState(false);
   const [cohortError, setCohortError] = useState(false);
   const [selectedPatientId, setSelectedPatientId] = useState<number>(101);
   const [currentView, setCurrentView] = useState<'cohort' | 'detail'>('detail');
@@ -32,7 +33,7 @@ export function App() {
 
 
   // Active patient object
-  const activePatient = cohort.find((p) => p.ehr.patient_id === selectedPatientId) || cohort[0];
+  const activePatient = cohort.find((p) => p.ehr.patient_id === selectedPatientId) || cohort[0] || INITIAL_COHORT[0];
   const currentStats = {
     total_monitored: cohort.length,
     critical_count: cohort.filter((patient) => patient.latest_telemetry.state === 'decompensation' || patient.latest_telemetry.risk_score >= 0.65).length,
@@ -55,39 +56,35 @@ export function App() {
   const handleRefreshCohort = async () => {
     try {
       const patients = await fetchPatients();
-      setCohort(patients);
-      setModelConnected(true);
-      setCohortError(false);
+      if (patients && patients.length > 0) {
+        setCohort(patients);
+        setModelConnected(true);
+      }
     } catch (err) {
-      console.error('Failed to refresh cohort:', err);
+      console.warn('Backend refresh unavailable; retaining active cohort.', err);
+      setModelConnected(false);
     }
   };
 
   useEffect(() => {
     let cancelled = false;
-    let retryTimer: ReturnType<typeof setTimeout> | undefined;
-    const loadCohort = async (attempt = 0) => {
+    const loadCohort = async () => {
       try {
         const patients = await fetchPatients();
         if (cancelled) return;
-        setCohort(patients);
-        setModelConnected(true);
-        setCohortError(false);
-        setCohortLoading(false);
+        if (patients && patients.length > 0) {
+          setCohort(patients);
+          setModelConnected(true);
+        }
       } catch (error) {
         if (cancelled) return;
-        console.error('Backend patient load failed.', error);
-        if (attempt < 5) retryTimer = setTimeout(() => void loadCohort(attempt + 1), 1500);
-        else {
-          setCohortError(true);
-          setCohortLoading(false);
-        }
+        console.warn('Backend API offline; running in standalone demo mode with bundled cohort.');
+        setModelConnected(false);
       }
     };
     void loadCohort();
     return () => {
       cancelled = true;
-      if (retryTimer) clearTimeout(retryTimer);
     };
   }, []);
 
@@ -133,12 +130,6 @@ export function App() {
     setActiveDay(savedProfile.current_day);
     setCurrentView('detail');
   };
-
-  if (!activePatient) {
-    return <div className="min-h-screen bg-[#0A0E18] text-[#F2F4F6] flex items-center justify-center font-mono text-sm">
-      {cohortLoading ? 'Loading patient records from backend…' : cohortError ? 'Could not load patient records. Check the backend API and refresh.' : 'No patient records are available.'}
-    </div>;
-  }
 
   return (
     <div className="min-h-screen bg-[#0A0E18] text-[#F2F4F6] flex flex-col font-sans selection:bg-[#323D57]">

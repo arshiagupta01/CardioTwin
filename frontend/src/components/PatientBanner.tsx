@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { PatientProfile } from '../types/clinical';
-import { Play, Pause, RotateCcw, AlertTriangle, ShieldCheck, HeartPulse, ChevronRight, ChevronLeft, Zap } from 'lucide-react';
+import { Play, Pause, RotateCcw, AlertTriangle, ShieldCheck, HeartPulse, ChevronRight, ChevronLeft, Zap, FileText, Info } from 'lucide-react';
 import { PatientAvatar } from './PatientAvatar';
+import { ClinicalTooltip } from './ClinicalTooltip';
 
 interface PatientBannerProps {
   patient: PatientProfile;
   activeDay: number;
   onDayChange: (day: number) => void;
   modelConnected: boolean;
+  onOpenReportModal?: () => void;
 }
 
 export const PatientBanner: React.FC<PatientBannerProps> = ({
@@ -15,9 +17,14 @@ export const PatientBanner: React.FC<PatientBannerProps> = ({
   activeDay,
   onDayChange,
   modelConnected,
+  onOpenReportModal,
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const currentTelemetry = patient.telemetry_series.find((d) => d.day_index === activeDay) || patient.latest_telemetry;
+  const baseline = patient.telemetry_series[0] ?? currentTelemetry;
+
+  const hrvDelta = currentTelemetry.hrv_mean - baseline.hrv_mean;
+  const rhrDelta = currentTelemetry.resting_hr_mean - baseline.resting_hr_mean;
 
   // Auto-play degradation progression
   useEffect(() => {
@@ -42,6 +49,7 @@ export const PatientBanner: React.FC<PatientBannerProps> = ({
         chipBg: 'bg-[#FFDAD6] text-[#93000A] dark:bg-[#7F1D1D]/50 dark:text-[#F87171] dark:border-[#DC2626]/40',
         label: 'ACUTE RISK STATE (24H MODEL)',
         icon: AlertTriangle,
+        summary: `CRITICAL ALERT: Patient ${patient.ehr.name} exhibits severe cardiovascular decompensation risk (${riskPercent}%). Biomarkers indicate acute vagal withdrawal (${hrvDelta.toFixed(1)} ms HRV drop from baseline) and compensatory tachycardia (+${rhrDelta.toFixed(1)} bpm resting HR). Recommended: STAT Troponin/BNP and immediate clinical evaluation.`,
       }
     : isStrain
     ? {
@@ -51,6 +59,7 @@ export const PatientBanner: React.FC<PatientBannerProps> = ({
         chipBg: 'bg-[#FEF3C7] text-[#92400E] dark:bg-[#78350F]/50 dark:text-[#FBBF24] dark:border-[#D97706]/40',
         label: 'AUTONOMIC STRAIN DETECTED',
         icon: AlertTriangle,
+        summary: `EARLY WARNING: Autonomic strain detected (${riskPercent}% risk). Continuous wearable feeds capture deteriorating sleep efficiency and early sympathetic surge prior to symptomatic cardiac failure. Recommended: Telehealth check-in and medication adherence review.`,
       }
     : {
         bg: 'bg-emerald-950/40',
@@ -59,13 +68,14 @@ export const PatientBanner: React.FC<PatientBannerProps> = ({
         chipBg: 'bg-[#D1FAE5] text-[#069669] dark:bg-[#064E3B]/50 dark:text-[#34D399] dark:border-[#059669]/40',
         label: 'PHYSIOLOGIC HOMEOSTASIS STABLE',
         icon: ShieldCheck,
+        summary: `STABLE STATUS: Patient biomarkers remain within expected homeostatic baseline boundaries (${riskPercent}% event risk). No acute neurohormonal decompensation signal detected over the active 24-48h horizon.`,
       };
 
   const StateIcon = stateTheme.icon;
 
   return (
     <div className="rounded-[4px] border border-[#323D57] bg-[#131B2E] p-3 mb-3 flex flex-col gap-3">
-      {/* Top Row: Demographics, State Chip, and High-Consequence Risk Gauge */}
+      {/* Top Row: Demographics, State Chip, Risk Gauge & Report Export */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         {/* Patient Identity */}
         <div className="flex items-center gap-3">
@@ -85,20 +95,32 @@ export const PatientBanner: React.FC<PatientBannerProps> = ({
           </div>
         </div>
 
-        {/* Dynamic Twin State Pill & Risk Probability Meter */}
-        <div className="flex items-center gap-4">
-          {/* Twin State Pill */}
-          <div className={`px-2.5 py-1 rounded-[12px] border text-xs font-mono font-bold flex items-center gap-1.5 uppercase tracking-wider ${stateTheme.chipBg}`}>
-            <StateIcon className="w-3.5 h-3.5" />
-            {stateTheme.label}
-          </div>
+        {/* Dynamic Twin State Pill & Risk Probability Meter & Export Action */}
+        <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap">
+          {/* Twin State Pill with Tooltip */}
+          <ClinicalTooltip
+            term={stateTheme.label}
+            definition="Clinical risk classification predicted by the AI model based on continuous biometric divergence."
+            clinicalSignificance="Decompensation indicates acute pump or vascular breakdown. Strain indicates early autonomic warning."
+          >
+            <div className={`px-2.5 py-1 rounded-[12px] border text-xs font-mono font-bold flex items-center gap-1.5 uppercase tracking-wider ${stateTheme.chipBg}`}>
+              <StateIcon className="w-3.5 h-3.5" />
+              {stateTheme.label}
+            </div>
+          </ClinicalTooltip>
 
           {/* High-Consequence 24-48h Event Probability */}
           <div className="flex items-center gap-3 pl-3 border-l border-[#323D57]">
             <div className="text-right">
-              <div className="text-[9px] uppercase tracking-wider text-[#9EA4B5] font-semibold">
-                24H MODEL RISK
-              </div>
+              <ClinicalTooltip
+                term="24H MODEL RISK"
+                definition="Probability that this patient will experience an acute cardiovascular decompensation requiring hospital admission in the next 24-48 hours."
+                normalRange="< 25% (Homeostasis)"
+              >
+                <div className="text-[9px] uppercase tracking-wider text-[#9EA4B5] font-semibold">
+                  24H MODEL RISK
+                </div>
+              </ClinicalTooltip>
               <div className={`text-2xl font-bold font-mono tracking-tight leading-none ${stateTheme.text}`}>
                 {riskPercent}%
               </div>
@@ -128,9 +150,34 @@ export const PatientBanner: React.FC<PatientBannerProps> = ({
               </svg>
               <HeartPulse className={`w-4 h-4 absolute ${stateTheme.text} ${isDecomp ? 'animate-bounce' : ''}`} />
             </div>
+
+            {/* Direct Clinical Report Export Trigger */}
+            {onOpenReportModal && (
+              <button
+                onClick={onOpenReportModal}
+                className="ml-2 px-2.5 py-1.5 bg-emerald-600/90 hover:bg-emerald-500 text-white rounded-[2px] font-mono text-[11px] font-bold flex items-center gap-1.5 transition-colors border border-emerald-400/30 shadow-sm"
+                title="Generate printable PDF consultation report"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">EXPORT REPORT (PDF)</span>
+                <span className="md:hidden">PDF</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
+
+      {/* 3-Second AI Clinical Assessment Narrative Banner */}
+      <div className={`p-2.5 rounded-[2px] border text-xs font-sans leading-relaxed flex items-start gap-2.5 ${isDecomp ? 'bg-red-950/30 border-red-500/40 text-red-200' : isStrain ? 'bg-amber-950/30 border-amber-500/40 text-amber-200' : 'bg-emerald-950/30 border-emerald-500/40 text-emerald-200'}`}>
+        <Info className={`w-4 h-4 shrink-0 mt-0.5 ${isDecomp ? 'text-red-400' : isStrain ? 'text-amber-400' : 'text-emerald-400'}`} />
+        <div className="flex-1">
+          <strong className="font-mono text-[10px] uppercase tracking-wider block font-bold mb-0.5 opacity-90">
+            AI CLINICAL NARRATIVE ASSESSMENT // 3-SECOND TRIAGE SUMMARY
+          </strong>
+          <span>{stateTheme.summary}</span>
+        </div>
+      </div>
+
 
       {/* Bottom Row: 10-Day Longitudinal Timeline Scrubber with Auto-Play */}
       <div className="bg-[#0A0E18] rounded-[2px] border border-[#323D57] p-2 flex flex-col md:flex-row md:items-center justify-between gap-3">

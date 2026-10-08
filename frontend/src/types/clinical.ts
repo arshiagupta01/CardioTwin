@@ -79,6 +79,10 @@ export interface CohortStats {
   critical_count: number;
   warning_count: number;
   stable_count: number;
+  hypertension_count?: number;
+  cardiovascular_risk_count?: number;
+  diabetic_count?: number;
   avg_risk: number;
   sync_uptime_pct: number;
 }
+

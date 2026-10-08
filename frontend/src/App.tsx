@@ -35,11 +35,14 @@ export function App() {
   const activePatient = cohort.find((p) => p.ehr.patient_id === selectedPatientId) || cohort[0];
   const currentStats = {
     total_monitored: cohort.length,
-    critical_count: cohort.filter((patient) => patient.latest_telemetry.state === 'decompensation').length,
-    warning_count: cohort.filter((patient) => patient.latest_telemetry.state === 'strain').length,
-    stable_count: cohort.filter((patient) => patient.latest_telemetry.state === 'homeostasis').length,
+    critical_count: cohort.filter((patient) => patient.latest_telemetry.state === 'decompensation' || patient.latest_telemetry.risk_score >= 0.65).length,
+    warning_count: cohort.filter((patient) => patient.latest_telemetry.state === 'strain' || (patient.latest_telemetry.risk_score >= 0.25 && patient.latest_telemetry.risk_score < 0.65)).length,
+    stable_count: cohort.filter((patient) => patient.latest_telemetry.state === 'homeostasis' && patient.latest_telemetry.risk_score < 0.25).length,
+    hypertension_count: cohort.filter((patient) => patient.ehr.diagnosis.toLowerCase().includes('hypertension')).length,
+    cardiovascular_risk_count: cohort.filter((patient) => patient.ehr.diagnosis.toLowerCase().includes('cardiovascular')).length,
+    diabetic_count: cohort.filter((patient) => patient.ehr.diabetes === 1).length,
     avg_risk: cohort.length ? cohort.reduce((sum, patient) => sum + patient.latest_telemetry.risk_score, 0) / cohort.length : 0,
-    sync_uptime_pct: cohort.length ? cohort.reduce((sum, patient) => sum + patient.hardware.ble_fidelity, 0) / cohort.length : 0,
+    sync_uptime_pct: cohort.length ? Number((cohort.reduce((sum, patient) => sum + patient.hardware.ble_fidelity, 0) / cohort.length).toFixed(1)) : 0,
   };
 
   useEffect(() => {
@@ -48,6 +51,17 @@ export function App() {
     document.documentElement.classList.toggle('dark', isDarkMode);
     localStorage.setItem('cardiotwin-theme', theme);
   }, [isDarkMode]);
+
+  const handleRefreshCohort = async () => {
+    try {
+      const patients = await fetchPatients();
+      setCohort(patients);
+      setModelConnected(true);
+      setCohortError(false);
+    } catch (err) {
+      console.error('Failed to refresh cohort:', err);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -77,6 +91,33 @@ export function App() {
     };
   }, []);
 
+  const handleDayChange = (day: number) => {
+    setActiveDay(day);
+    // Keep active patient's current telemetry in cohort aligned with selected day
+    setCohort((prev) =>
+      prev.map((p) => {
+        if (p.ehr.patient_id === selectedPatientId) {
+          const matched = p.telemetry_series.find((d) => d.day_index === day);
+          if (matched) {
+            return {
+              ...p,
+              current_day: day,
+              latest_telemetry: matched,
+            };
+          }
+        }
+        return p;
+      })
+    );
+  };
+
+  const handleViewChange = (view: 'cohort' | 'detail') => {
+    setCurrentView(view);
+    if (view === 'cohort') {
+      void handleRefreshCohort();
+    }
+  };
+
   // Callback when a new record or patient is submitted through the multi-modal intake
   const handleRecordAdded = async (updatedProfile: PatientProfile) => {
     const savedProfile = await savePatient(updatedProfile);
@@ -104,7 +145,7 @@ export function App() {
       {/* Master Clinical Station Header */}
       <Header
         currentView={currentView}
-        onViewChange={setCurrentView}
+        onViewChange={handleViewChange}
         onOpenDataIntake={() => setIsDataIntakeOpen(true)}
         selectedPatientId={selectedPatientId}
         isDarkMode={isDarkMode}
@@ -125,6 +166,7 @@ export function App() {
               setCurrentView('detail');
             }}
             onOpenDataIntake={() => setIsDataIntakeOpen(true)}
+            onRefresh={handleRefreshCohort}
           />
         ) : (
           /* View 2: Patient Bio-Digital Twin Deep Dive Console */
@@ -133,10 +175,11 @@ export function App() {
             <PatientBanner
               patient={activePatient}
               activeDay={activeDay}
-              onDayChange={setActiveDay}
+              onDayChange={handleDayChange}
               modelConnected={modelConnected}
               onOpenReportModal={() => setIsReportModalOpen(true)}
             />
+
 
             {/* 3-Column Diagnostic Workstation Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">

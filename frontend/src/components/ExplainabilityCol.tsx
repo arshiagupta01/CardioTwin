@@ -102,9 +102,16 @@ export const ExplainabilityCol: React.FC<ExplainabilityColProps> = ({
       <div className="flex items-center justify-between border-b border-[#323D57] pb-2">
         <div className="flex items-center gap-2">
           <Cpu className="w-4 h-4 text-emerald-400" />
-          <h3 className="text-xs uppercase font-bold tracking-wider text-[#F2F4F6]">
-            MODEL OUTPUT & CLINICAL DECISION SUPPORT
-          </h3>
+          <ClinicalTooltip
+            term="MODEL OUTPUT & CLINICAL DECISION SUPPORT"
+            definition="AI ensemble analyzing continuous wearable biomarker divergence and baseline EHR to predict cardiac events 24-48h in advance."
+            clinicalSignificance="Flags acute decompensation early so clinicians can intervene before emergency hospitalization."
+            hideIcon={false}
+          >
+            <h3 className="text-xs uppercase font-bold tracking-wider text-[#F2F4F6]">
+              MODEL OUTPUT & CLINICAL DECISION SUPPORT
+            </h3>
+          </ClinicalTooltip>
         </div>
         <span className={`text-[10px] font-mono ${modelConnected ? 'text-emerald-400' : 'text-amber-400'}`}>
           {modelConnected ? `BACKEND RANDOM FOREST${modelAuc === null ? '' : ` · AUC ${modelAuc.toFixed(3)}`}` : 'DEMO SCORES · API OFFLINE'}
@@ -114,9 +121,15 @@ export const ExplainabilityCol: React.FC<ExplainabilityColProps> = ({
       {/* Global model feature importance */}
       <div className="rounded-[4px] border border-[#323D57] bg-[#131B2E] p-3">
         <div className="flex items-center justify-between mb-2">
-          <div className="text-[10px] uppercase tracking-wider font-semibold text-[#9EA4B5]">
-            GLOBAL MODEL FEATURE IMPORTANCE
-          </div>
+          <ClinicalTooltip
+            term="GLOBAL MODEL FEATURE IMPORTANCE"
+            definition="The mathematical weight and contribution of each biomarker to reducing impurity across decision trees."
+            clinicalSignificance="Highlights which physiological features (e.g. HRV drop, Resting HR rise) drive the AI's risk predictions."
+          >
+            <div className="text-[10px] uppercase tracking-wider font-semibold text-[#9EA4B5]">
+              GLOBAL MODEL FEATURE IMPORTANCE
+            </div>
+          </ClinicalTooltip>
           <span className="text-[9px] font-mono text-[#9EA4B5]">RANDOM FOREST SPLITS</span>
         </div>
 
@@ -155,10 +168,16 @@ export const ExplainabilityCol: React.FC<ExplainabilityColProps> = ({
       {/* Interactive "What-If" Counterfactual Simulation Sandbox */}
       <div className="rounded-[4px] border border-[#323D57] bg-[#131B2E] p-3">
         <div className="flex items-center justify-between mb-2 pb-1 border-b border-[#323D57]/60">
-          <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-semibold text-amber-300">
-            <Sliders className="w-3.5 h-3.5 text-amber-400" />
-            "WHAT-IF" COUNTERFACTUAL INTERVENTION SANDBOX
-          </div>
+          <ClinicalTooltip
+            term="COUNTERFACTUAL INTERVENTION SANDBOX"
+            definition="In silico simulation allowing doctors to test the impact of pharmacological or lifestyle treatments on the digital twin."
+            clinicalSignificance="Enables predictive evaluation of expected risk reduction before prescribing therapies."
+          >
+            <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-semibold text-amber-300">
+              <Sliders className="w-3.5 h-3.5 text-amber-400" />
+              "WHAT-IF" COUNTERFACTUAL INTERVENTION SANDBOX
+            </div>
+          </ClinicalTooltip>
           <span className="text-[9px] font-mono bg-amber-950/60 text-amber-300 px-1.5 py-0.2 border border-amber-500/40 rounded-[2px]">
             BACKEND INFERENCE
           </span>
@@ -173,7 +192,14 @@ export const ExplainabilityCol: React.FC<ExplainabilityColProps> = ({
           {/* Target HRV */}
           <div>
             <div className="flex justify-between mb-0.5">
-              <span className="text-[#9EA4B5]">TARGET HRV (RMSSD):</span>
+              <ClinicalTooltip
+                term="TARGET HRV (RMSSD)"
+                definition="Root Mean Square of Successive RR interval differences. Measures parasympathetic (vagal) autonomic regulation."
+                normalRange="35 - 65 ms"
+                clinicalSignificance="Higher HRV reflects healthy vagal tone; acute drops indicate impending cardiac decompensation."
+              >
+                <span className="text-[#9EA4B5]">TARGET HRV (RMSSD):</span>
+              </ClinicalTooltip>
               <strong className="text-emerald-400">{targetHrv.toFixed(1)} ms</strong>
             </div>
             <input
@@ -190,7 +216,14 @@ export const ExplainabilityCol: React.FC<ExplainabilityColProps> = ({
           {/* Target Resting HR */}
           <div>
             <div className="flex justify-between mb-0.5">
-              <span className="text-[#9EA4B5]">TARGET RESTING HR:</span>
+              <ClinicalTooltip
+                term="TARGET RESTING HR"
+                definition="Baseline heart rate during resting states without physical exertion."
+                normalRange="60 - 80 bpm"
+                clinicalSignificance="Elevated resting HR (>80 bpm) indicates compensatory sympathetic tachycardia as stroke volume falls."
+              >
+                <span className="text-[#9EA4B5]">TARGET RESTING HR:</span>
+              </ClinicalTooltip>
               <strong className="text-amber-400">{targetRhr.toFixed(0)} bpm</strong>
             </div>
             <input
@@ -207,7 +240,14 @@ export const ExplainabilityCol: React.FC<ExplainabilityColProps> = ({
           {/* Target Systolic BP */}
           <div>
             <div className="flex justify-between mb-0.5">
-              <span className="text-[#9EA4B5]">TARGET SYSTOLIC BP:</span>
+              <ClinicalTooltip
+                term="TARGET SYSTOLIC BP"
+                definition="Peak arterial pressure during left ventricular systole."
+                normalRange="100 - 120 mmHg"
+                clinicalSignificance="Lowering systolic pressure reduces cardiac afterload and left ventricular wall stress."
+              >
+                <span className="text-[#9EA4B5]">TARGET SYSTOLIC BP:</span>
+              </ClinicalTooltip>
               <strong className="text-sky-400">{targetSbp} mmHg</strong>
             </div>
             <input
@@ -224,7 +264,14 @@ export const ExplainabilityCol: React.FC<ExplainabilityColProps> = ({
           {/* Target Sleep Duration */}
           <div>
             <div className="flex justify-between mb-0.5">
-              <span className="text-[#9EA4B5]">TARGET SLEEP DURATION:</span>
+              <ClinicalTooltip
+                term="TARGET SLEEP DURATION"
+                definition="Continuous restorative nocturnal sleep hours captured by wearable biosensors."
+                normalRange="7.0 - 8.5 hrs"
+                clinicalSignificance="Sleep fragmentation is an early prodromal indicator of nocturnal orthopnea and paroxysmal dyspnea."
+              >
+                <span className="text-[#9EA4B5]">TARGET SLEEP DURATION:</span>
+              </ClinicalTooltip>
               <strong className="text-indigo-400">{targetSleep.toFixed(1)} hrs</strong>
             </div>
             <input
@@ -242,7 +289,13 @@ export const ExplainabilityCol: React.FC<ExplainabilityColProps> = ({
         {/* Dynamic Simulation Result Card */}
         <div className="mt-3 p-2 bg-[#0A0E18] rounded-[2px] border border-[#323D57] flex items-center justify-between">
           <div>
-            <div className="text-[9px] uppercase tracking-wider text-[#9EA4B5]">MODEL 24H RISK</div>
+            <ClinicalTooltip
+              term="MODEL 24H SIMULATED RISK"
+              definition="Predicted acute event probability under the simulated counterfactual targets."
+              clinicalSignificance="Demonstrates how clinical interventions shift the patient toward homeostatic stability."
+            >
+              <div className="text-[9px] uppercase tracking-wider text-[#9EA4B5]">MODEL 24H RISK</div>
+            </ClinicalTooltip>
             {simError && <div className="text-[9px] text-amber-400">Backend inference unavailable</div>}
             <div className="flex items-baseline gap-2">
               <span className="text-lg font-bold font-mono text-[#F2F4F6]">
@@ -270,69 +323,140 @@ export const ExplainabilityCol: React.FC<ExplainabilityColProps> = ({
 
       {/* Clinical Decision Support Action Protocols */}
       <div className="rounded-[4px] border border-[#323D57] bg-[#131B2E] p-3 flex flex-col gap-2">
-        <div className="text-[10px] uppercase tracking-wider font-semibold text-[#9EA4B5] mb-1">
-          CLINICAL ACTION PROTOCOLS (1-CLICK CDS)
-        </div>
+        <ClinicalTooltip
+          term="CLINICAL ACTION PROTOCOLS (1-CLICK CDS)"
+          definition="One-click clinical workflows enabling instant EHR documentation, diagnostic ordering, and patient triage."
+          clinicalSignificance="Shortens time-to-treatment by eliminating manual clerical steps during cardiac alert episodes."
+        >
+          <div className="text-[10px] uppercase tracking-wider font-semibold text-[#9EA4B5] mb-1">
+            CLINICAL ACTION PROTOCOLS (1-CLICK CDS)
+          </div>
+        </ClinicalTooltip>
 
         {/* Primary Report Export Button */}
         {onOpenReportModal && (
-          <button
-            onClick={onOpenReportModal}
-            className="w-full py-2 px-3 bg-emerald-600/90 hover:bg-emerald-500 text-white rounded-[2px] text-xs font-mono font-bold flex items-center justify-center gap-2 transition-all border border-emerald-400/30 shadow-sm active:scale-[0.99]"
+          <ClinicalTooltip
+            term="EXPORT CLINICAL REPORT"
+            definition="Generates a hospital consultation note and chart summary with 1-click Print/PDF, progress note, and CSV export."
+            clinicalSignificance="Provides documentation for shift handoffs, patient records, and cardiology consultations."
+            hideIcon={true}
           >
-            <FileText className="w-3.5 h-3.5 text-white" />
-            <span>EXPORT CLINICAL REPORT (PDF / PRINT)</span>
-          </button>
+            <button
+              onClick={onOpenReportModal}
+              className="w-full py-2 px-3 bg-emerald-600/90 hover:bg-emerald-500 text-white rounded-[2px] text-xs font-mono font-bold flex items-center justify-center gap-2 transition-all border border-emerald-400/30 shadow-sm active:scale-[0.99]"
+            >
+              <FileText className="w-3.5 h-3.5 text-white" />
+              <span>EXPORT CLINICAL REPORT (PDF / PRINT)</span>
+            </button>
+          </ClinicalTooltip>
         )}
 
-        <button
-          onClick={onTriggerCall}
-          className="w-full py-2 px-3 bg-red-900/60 hover:bg-red-800/70 text-red-100 border border-red-500/60 rounded-[2px] text-xs font-mono font-bold flex items-center justify-center gap-2 transition-all active:scale-[0.99]"
+        <ClinicalTooltip
+          term="TRIGGER PATIENT CALL & TRIAGE"
+          definition="Initiates immediate two-way telehealth outreach and records a structured triage note in the chart."
+          clinicalSignificance="Verifies patient symptoms (orthopnea, chest pressure) within the critical 24-48h window."
+          hideIcon={true}
         >
-          <PhoneCall className="w-3.5 h-3.5 text-red-300" />
-          <span>TRIGGER PATIENT CALL & TRIAGE</span>
-        </button>
+          <button
+            onClick={onTriggerCall}
+            className="w-full py-2 px-3 bg-red-900/60 hover:bg-red-800/70 text-red-100 border border-red-500/60 rounded-[2px] text-xs font-mono font-bold flex items-center justify-center gap-2 transition-all active:scale-[0.99]"
+          >
+            <PhoneCall className="w-3.5 h-3.5 text-red-300" />
+            <span>TRIGGER PATIENT CALL & TRIAGE</span>
+          </button>
+        </ClinicalTooltip>
 
         <div className="grid grid-cols-2 gap-2">
-          <button
-            onClick={onOrderStat}
-            className="py-1.5 px-2 bg-[#161E31] hover:bg-[#1C263D] text-[#F2F4F6] border border-[#323D57] rounded-[2px] text-[11px] font-mono font-semibold flex items-center justify-center gap-1.5 transition-colors"
+          <ClinicalTooltip
+            term="ORDER STAT LAB/ECG"
+            definition="Direct computerized order requisition for Troponin-I, 12-lead ECG, NT-proBNP, CMP, or Holter."
+            clinicalSignificance="Rapidly confirms myocardial damage and fluid overload to prevent emergency admission."
+            hideIcon={true}
           >
-            <Stethoscope className="w-3 h-3 text-amber-400" />
-            <span>ORDER STAT LAB/ECG</span>
-          </button>
+            <button
+              onClick={onOrderStat}
+              className="w-full py-1.5 px-2 bg-[#161E31] hover:bg-[#1C263D] text-[#F2F4F6] border border-[#323D57] rounded-[2px] text-[11px] font-mono font-semibold flex items-center justify-center gap-1.5 transition-colors"
+            >
+              <Stethoscope className="w-3 h-3 text-amber-400" />
+              <span>ORDER STAT LAB/ECG</span>
+            </button>
+          </ClinicalTooltip>
 
-          <button
-            onClick={onExportFhir}
-            className="py-1.5 px-2 bg-[#161E31] hover:bg-[#1C263D] text-[#F2F4F6] border border-[#323D57] rounded-[2px] text-[11px] font-mono font-semibold flex items-center justify-center gap-1.5 transition-colors"
+          <ClinicalTooltip
+            term="EXPORT HL7 FHIR"
+            definition="Generates standard HL7 FHIR JSON bundle with Patient, RiskAssessment (SNOMED-CT 428251008), and Observations."
+            clinicalSignificance="Ensures interoperability across Epic Systems, Cerner, and national health record systems."
+            hideIcon={true}
           >
-            <Download className="w-3 h-3 text-sky-400" />
-            <span>EXPORT HL7 FHIR</span>
-          </button>
+            <button
+              onClick={onExportFhir}
+              className="w-full py-1.5 px-2 bg-[#161E31] hover:bg-[#1C263D] text-[#F2F4F6] border border-[#323D57] rounded-[2px] text-[11px] font-mono font-semibold flex items-center justify-center gap-1.5 transition-colors"
+            >
+              <Download className="w-3 h-3 text-sky-400" />
+              <span>EXPORT HL7 FHIR</span>
+            </button>
+          </ClinicalTooltip>
         </div>
 
         {/* Suggested Clinical Checklist */}
         <div className="mt-2 pt-2 border-t border-[#323D57]/60">
-          <div className="text-[9px] uppercase tracking-wider font-semibold text-[#9EA4B5] mb-1.5">
-            SUGGESTED CLINICAL PROTOCOL (AHA/ACC)
-          </div>
+          <ClinicalTooltip
+            term="AHA/ACC CLINICAL PROTOCOL"
+            definition="Evidence-based guidelines from the American Heart Association and American College of Cardiology for acute cardiac strain."
+            clinicalSignificance="Standardizes clinical decision-making across bedside nurses and attending physicians."
+          >
+            <div className="text-[9px] uppercase tracking-wider font-semibold text-[#9EA4B5] mb-1.5">
+              SUGGESTED CLINICAL PROTOCOL (AHA/ACC)
+            </div>
+          </ClinicalTooltip>
           <div className="space-y-1 text-[11px] text-[#9EA4B5] font-sans">
-            <label className="flex items-center gap-2 cursor-pointer hover:text-[#F2F4F6]">
-              <input type="checkbox" defaultChecked className="accent-emerald-500 rounded-sm" />
-              <span>STAT Troponin-I & NT-proBNP draw</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer hover:text-[#F2F4F6]">
-              <input type="checkbox" defaultChecked className="accent-emerald-500 rounded-sm" />
-              <span>12-Lead ECG for ischemic conduction changes</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer hover:text-[#F2F4F6]">
-              <input type="checkbox" className="accent-emerald-500 rounded-sm" />
-              <span>Telehealth nurse vitals verification</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer hover:text-[#F2F4F6]">
-              <input type="checkbox" className="accent-emerald-500 rounded-sm" />
-              <span>Optimize neurohormonal blockade regimen</span>
-            </label>
+            <ClinicalTooltip
+              term="STAT Troponin-I & NT-proBNP"
+              definition="High-sensitivity markers for myocardial cell death (Troponin) and ventricular wall tension (NT-proBNP)."
+              clinicalSignificance="Confirms acute myocardial injury and ventricular congestion."
+              hideIcon={true}
+            >
+              <label className="flex items-center gap-2 cursor-pointer hover:text-[#F2F4F6]">
+                <input type="checkbox" defaultChecked className="accent-emerald-500 rounded-sm" />
+                <span>STAT Troponin-I & NT-proBNP draw</span>
+              </label>
+            </ClinicalTooltip>
+
+            <ClinicalTooltip
+              term="12-Lead Electrocardiogram"
+              definition="Standard diagnostic electrical recording of cardiac polarization and repolarization across 12 anatomical leads."
+              clinicalSignificance="Detects acute ST-segment changes, ischemia, and dangerous conduction delays."
+              hideIcon={true}
+            >
+              <label className="flex items-center gap-2 cursor-pointer hover:text-[#F2F4F6]">
+                <input type="checkbox" defaultChecked className="accent-emerald-500 rounded-sm" />
+                <span>12-Lead ECG for ischemic conduction changes</span>
+              </label>
+            </ClinicalTooltip>
+
+            <ClinicalTooltip
+              term="Telehealth Vitals Verification"
+              definition="Clinical outreach to verify home blood pressure, pulse, and symptoms before initiating pharmacotherapy."
+              clinicalSignificance="Prevents unnecessary hospital admissions by verifying telemetry accuracy."
+              hideIcon={true}
+            >
+              <label className="flex items-center gap-2 cursor-pointer hover:text-[#F2F4F6]">
+                <input type="checkbox" className="accent-emerald-500 rounded-sm" />
+                <span>Telehealth nurse vitals verification</span>
+              </label>
+            </ClinicalTooltip>
+
+            <ClinicalTooltip
+              term="Guideline-Directed Medical Therapy (GDMT)"
+              definition="Optimizing 4-pillar neurohormonal blockade: ARNI/ACEi, beta-blockers, MRA, and SGLT2 inhibitors."
+              clinicalSignificance="Reverses cardiac remodeling and drastically reduces mortality and readmission rates."
+              hideIcon={true}
+            >
+              <label className="flex items-center gap-2 cursor-pointer hover:text-[#F2F4F6]">
+                <input type="checkbox" className="accent-emerald-500 rounded-sm" />
+                <span>Optimize neurohormonal blockade regimen</span>
+              </label>
+            </ClinicalTooltip>
           </div>
         </div>
       </div>

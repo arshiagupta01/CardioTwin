@@ -183,17 +183,24 @@ export const PatientBanner: React.FC<PatientBannerProps> = ({
       <div className="bg-[#0A0E18] rounded-[2px] border border-[#323D57] p-2 flex flex-col md:flex-row md:items-center justify-between gap-3">
         {/* Scrubber Controls */}
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsPlaying(!isPlaying)}
-            className={`px-2.5 py-1 rounded-[2px] border text-xs font-mono font-semibold flex items-center gap-1.5 transition-colors ${
-              isPlaying
-                ? 'bg-amber-950/60 border-amber-500/50 text-amber-300'
-                : 'bg-[#131B2E] border-[#323D57] text-[#F2F4F6] hover:bg-[#161E31]'
-            }`}
+          <ClinicalTooltip
+            term="5-DAY DEGRADATION CASCADE"
+            definition="Auto-plays the longitudinal trajectory showing autonomic deterioration from healthy baseline to acute decompensation."
+            clinicalSignificance="Visualizes the compounding biometric drift (vagal withdrawal, compensatory tachycardia) leading up to an event."
+            hideIcon={true}
           >
-            {isPlaying ? <Pause className="w-3 h-3 text-amber-400" /> : <Play className="w-3 h-3 text-emerald-400" />}
-            {isPlaying ? 'PAUSE CASCADE' : 'PLAY 5-DAY CASCADE'}
-          </button>
+            <button
+              onClick={() => setIsPlaying(!isPlaying)}
+              className={`px-2.5 py-1 rounded-[2px] border text-xs font-mono font-semibold flex items-center gap-1.5 transition-colors ${
+                isPlaying
+                  ? 'bg-amber-950/60 border-amber-500/50 text-amber-300'
+                  : 'bg-[#131B2E] border-[#323D57] text-[#F2F4F6] hover:bg-[#161E31]'
+              }`}
+            >
+              {isPlaying ? <Pause className="w-3 h-3 text-amber-400" /> : <Play className="w-3 h-3 text-emerald-400" />}
+              {isPlaying ? 'PAUSE CASCADE' : 'PLAY 5-DAY CASCADE'}
+            </button>
+          </ClinicalTooltip>
 
           <button
             onClick={() => onDayChange(1)}

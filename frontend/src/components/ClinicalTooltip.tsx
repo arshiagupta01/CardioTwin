@@ -7,6 +7,8 @@ interface ClinicalTooltipProps {
   clinicalSignificance?: string;
   normalRange?: string;
   children?: React.ReactNode;
+  hideIcon?: boolean;
+  side?: 'top' | 'bottom';
 }
 
 export const ClinicalTooltip: React.FC<ClinicalTooltipProps> = ({
@@ -15,8 +17,15 @@ export const ClinicalTooltip: React.FC<ClinicalTooltipProps> = ({
   clinicalSignificance,
   normalRange,
   children,
+  hideIcon = false,
+  side = 'top',
 }) => {
   const [isVisible, setIsVisible] = useState(false);
+
+  const positionClasses =
+    side === 'bottom'
+      ? 'top-full left-1/2 -translate-x-1/2 mt-1.5'
+      : 'bottom-full left-1/2 -translate-x-1/2 mb-1.5';
 
   return (
     <span
@@ -26,10 +35,12 @@ export const ClinicalTooltip: React.FC<ClinicalTooltipProps> = ({
       onClick={() => setIsVisible(!isVisible)}
     >
       {children || <span className="underline decoration-dotted decoration-[#7C839B]">{term}</span>}
-      <HelpCircle className="w-3 h-3 text-[#9EA4B5] group-hover:text-emerald-400 transition-colors inline-block" />
+      {!hideIcon && (
+        <HelpCircle className="w-3 h-3 text-[#9EA4B5] group-hover:text-emerald-400 transition-colors inline-block shrink-0" />
+      )}
 
       {isVisible && (
-        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 z-50 w-72 p-2.5 bg-[#0A0E18] border border-[#323D57] rounded text-left shadow-2xl text-[11px] font-sans text-[#F2F4F6] pointer-events-none normal-case leading-normal font-normal">
+        <span className={`absolute ${positionClasses} z-[100] w-72 p-2.5 bg-[#0A0E18] border border-[#323D57] rounded text-left shadow-2xl text-[11px] font-sans text-[#F2F4F6] pointer-events-none normal-case leading-normal font-normal`}>
           <strong className="block text-emerald-400 font-mono text-[10px] uppercase tracking-wider mb-1">
             {term}
           </strong>

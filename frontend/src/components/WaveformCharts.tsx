@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { DayTelemetry, RiskState } from '../types/clinical';
 import { Moon, TrendingDown, Footprints, AlertTriangle } from 'lucide-react';
+import { ClinicalTooltip } from './ClinicalTooltip';
 
 interface WaveformChartsProps {
   telemetrySeries: DayTelemetry[];
@@ -58,12 +59,18 @@ export const WaveformCharts: React.FC<WaveformChartsProps> = ({
       {/* Chart 1: HRV (RMSSD in ms) 10-Day Longitudinal Autonomic Degradation Curve */}
       <div className="rounded-[4px] border border-[#323D57] bg-[#131B2E] p-3">
         <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <TrendingDown className="w-3.5 h-3.5 text-red-400" />
-            <span className="text-[10px] uppercase tracking-wider font-semibold text-[#F2F4F6]">
-              HRV TRAJECTORY // RMSSD AUTONOMIC DRIFT
-            </span>
-          </div>
+          <ClinicalTooltip
+            term="HRV TRAJECTORY (RMSSD)"
+            definition="Longitudinal 10-day progression of parasympathetic heart rate variability."
+            clinicalSignificance="A steep downward trajectory warns of failing vagal tone and acute neurohormonal decompensation."
+          >
+            <div className="flex items-center gap-2">
+              <TrendingDown className="w-3.5 h-3.5 text-red-400" />
+              <span className="text-[10px] uppercase tracking-wider font-semibold text-[#F2F4F6]">
+                HRV TRAJECTORY // RMSSD AUTONOMIC DRIFT
+              </span>
+            </div>
+          </ClinicalTooltip>
           <div className="flex items-center gap-3 text-[10px] font-mono">
             <span className="text-[#9EA4B5]">
               ACTIVE D-{activeRecord.day_index}: <strong className="text-emerald-400">{activeRecord.hrv_mean.toFixed(1)} ms</strong>
@@ -179,12 +186,19 @@ export const WaveformCharts: React.FC<WaveformChartsProps> = ({
       {/* Chart 2: Resting Heart Rate vs Mean HR Dual-Trace Trend */}
       <div className="rounded-[4px] border border-[#323D57] bg-[#131B2E] p-3">
         <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-            <span className="text-[10px] uppercase tracking-wider font-semibold text-[#F2F4F6]">
-              RESTING HR ELEVATION // NOCTURNAL OVERDRIVE
-            </span>
-          </div>
+          <ClinicalTooltip
+            term="RESTING HR ELEVATION"
+            definition="Mean resting heart rate captured throughout sedentary and nocturnal periods."
+            normalRange="60 - 80 bpm"
+            clinicalSignificance="Persistent elevation (>80 bpm) indicates compensatory sympathetic activation to counteract falling cardiac output."
+          >
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+              <span className="text-[10px] uppercase tracking-wider font-semibold text-[#F2F4F6]">
+                RESTING HR ELEVATION // NOCTURNAL OVERDRIVE
+              </span>
+            </div>
+          </ClinicalTooltip>
           <div className="flex items-center gap-3 text-[10px] font-mono">
             <span className="text-[#9EA4B5]">
               RHR: <strong className="text-amber-400">{activeRecord.resting_hr_mean.toFixed(1)} bpm</strong>
@@ -249,10 +263,18 @@ export const WaveformCharts: React.FC<WaveformChartsProps> = ({
         {/* Sleep Breakdown */}
         <div className="rounded-[4px] border border-[#323D57] bg-[#131B2E] p-2.5">
           <div className="flex items-center justify-between mb-1.5">
-            <div className="flex items-center gap-1.5 text-[9px] uppercase tracking-wider font-semibold text-[#9EA4B5]">
-              <Moon className="w-3 h-3 text-indigo-400" />
-              SLEEP DURATION
-            </div>
+            <ClinicalTooltip
+              term="SLEEP ARCHITECTURE"
+              definition="Nocturnal sleep duration categorized into deep, REM, and light phases alongside sleep efficiency."
+              normalRange="7.0 - 8.5 hrs (Eff > 85%)"
+              clinicalSignificance="Frequent micro-arousals and falling deep sleep are early warnings of orthopnea and nocturnal congestion."
+              hideIcon={true}
+            >
+              <div className="flex items-center gap-1.5 text-[9px] uppercase tracking-wider font-semibold text-[#9EA4B5]">
+                <Moon className="w-3 h-3 text-indigo-400" />
+                SLEEP DURATION
+              </div>
+            </ClinicalTooltip>
             <span className="text-[10px] font-mono font-bold text-[#F2F4F6]">
               {activeRecord.sleep_hours.toFixed(1)} hrs
             </span>
@@ -299,10 +321,18 @@ export const WaveformCharts: React.FC<WaveformChartsProps> = ({
         {/* Steps / Exertion */}
         <div className="rounded-[4px] border border-[#323D57] bg-[#131B2E] p-2.5">
           <div className="flex items-center justify-between mb-1.5">
-            <div className="flex items-center gap-1.5 text-[9px] uppercase tracking-wider font-semibold text-[#9EA4B5]">
-              <Footprints className="w-3 h-3 text-cyan-400" />
-              DAILY STEPS & LOAD
-            </div>
+            <ClinicalTooltip
+              term="DAILY STEPS & PHYSICAL LOAD"
+              definition="Daily ambulatory step counts and composite metabolic exertion score."
+              normalRange="6,000 - 10,000 steps"
+              clinicalSignificance="Steep drops in daily activity reflect exertional dyspnea and functional NYHA class worsening."
+              hideIcon={true}
+            >
+              <div className="flex items-center gap-1.5 text-[9px] uppercase tracking-wider font-semibold text-[#9EA4B5]">
+                <Footprints className="w-3 h-3 text-cyan-400" />
+                DAILY STEPS & LOAD
+              </div>
+            </ClinicalTooltip>
             <span className="text-[10px] font-mono font-bold text-[#F2F4F6]">
               {activeRecord.daily_steps.toLocaleString()}
             </span>

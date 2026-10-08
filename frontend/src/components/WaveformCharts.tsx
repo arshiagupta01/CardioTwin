@@ -18,6 +18,14 @@ export const WaveformCharts: React.FC<WaveformChartsProps> = ({
 }) => {
   const [hoveredDay, setHoveredDay] = useState<number | null>(null);
 
+  if (!telemetrySeries || telemetrySeries.length === 0) {
+    return (
+      <div className="rounded-[4px] border border-[#323D57] bg-[#131B2E] p-3 text-xs font-mono text-[#9EA4B5]">
+        No continuous telemetry series recorded for this twin.
+      </div>
+    );
+  }
+
   // SVG coordinate calculations for HRV (range: 10 - 70 ms)
   const chartWidth = 560;
   const chartHeight = 120;
@@ -38,15 +46,18 @@ export const WaveformCharts: React.FC<WaveformChartsProps> = ({
     return chartHeight - paddingY - (ratio * (chartHeight - (2 * paddingY)));
   };
 
+  const divisor = Math.max(1, telemetrySeries.length - 1);
   const getX = (dayIndex: number) => {
-    const step = (chartWidth - (2 * paddingX)) / (telemetrySeries.length - 1);
+    const step = (chartWidth - (2 * paddingX)) / divisor;
     return paddingX + ((dayIndex - 1) * step);
   };
 
   // Build SVG path for HRV
   const hrvPoints = telemetrySeries.map((d) => `${getX(d.day_index)},${getHrvY(d.hrv_mean)}`);
   const hrvPath = `M ${hrvPoints.join(' L ')}`;
-  const hrvArea = `${hrvPath} L ${getX(telemetrySeries[telemetrySeries.length - 1].day_index)},${chartHeight - paddingY} L ${getX(1)},${chartHeight - paddingY} Z`;
+  const lastDayIndex = telemetrySeries[telemetrySeries.length - 1]?.day_index ?? 1;
+  const firstDayIndex = telemetrySeries[0]?.day_index ?? 1;
+  const hrvArea = `${hrvPath} L ${getX(lastDayIndex)},${chartHeight - paddingY} L ${getX(firstDayIndex)},${chartHeight - paddingY} Z`;
 
   // Build SVG path for Resting Heart Rate
   const rhrPoints = telemetrySeries.map((d) => `${getX(d.day_index)},${getRhrY(d.resting_hr_mean)}`);

@@ -60,21 +60,31 @@ export const RiskTimeline: React.FC<RiskTimelineProps> = ({
 
   // Fetch from API
   useEffect(() => {
+    const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+    const controller = new AbortController();
     setApiLoading(true);
     setApiError(false);
-    fetch(`/api/patients/${patientId}/risk_timeline`)
+
+    fetch(`${API_BASE}/api/patients/${patientId}/risk_timeline`, { signal: controller.signal })
       .then((r) => {
-        if (!r.ok) throw new Error('API error');
+        if (!r.ok) throw new Error(`API error ${r.status}`);
         return r.json();
       })
       .then((data: { timeline: ApiDay[] }) => {
-        setApiData(data.timeline);
+        if (data?.timeline && data.timeline.length > 0) {
+          setApiData(data.timeline);
+        }
         setApiLoading(false);
       })
-      .catch(() => {
+      .catch((err: unknown) => {
+        if (err instanceof DOMException && err.name === 'AbortError') return;
         setApiError(true);
         setApiLoading(false);
       });
+
+    return () => {
+      controller.abort();
+    };
   }, [patientId]);
 
   // ─── Canvas rendering ───────────────────────────────────────────────────────

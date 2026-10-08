@@ -231,6 +231,24 @@ def get_patient(patient_id: int) -> dict:
     raise HTTPException(status_code=404, detail="Patient not found")
 
 
+@app.get("/api/patients/{patient_id}/risk_timeline")
+def get_patient_risk_timeline(patient_id: int) -> dict:
+    profiles = _read_profiles()
+    for profile in profiles:
+        if profile["ehr"]["patient_id"] == patient_id:
+            timeline = [
+                {
+                    "day_index": int(d["day_index"]),
+                    "risk_score": float(d["risk_score"]),
+                    "risk_percent": round(float(d["risk_score"]) * 100, 1),
+                    "state": str(d["state"]),
+                }
+                for d in profile.get("telemetry_series", [])
+            ]
+            return {"patient_id": patient_id, "timeline": timeline}
+    raise HTTPException(status_code=404, detail="Patient not found")
+
+
 @app.put("/api/patients/{patient_id}")
 def save_patient(patient_id: int, profile: dict) -> dict:
     try:

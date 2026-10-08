@@ -26,16 +26,18 @@ export const PatientBanner: React.FC<PatientBannerProps> = ({
   const hrvDelta = currentTelemetry.hrv_mean - baseline.hrv_mean;
   const rhrDelta = currentTelemetry.resting_hr_mean - baseline.resting_hr_mean;
 
+  const totalDays = Math.max(1, patient.telemetry_series.length || 10);
+
   // Auto-play degradation progression
   useEffect(() => {
     let timer: ReturnType<typeof setInterval>;
     if (isPlaying) {
       timer = setInterval(() => {
-        onDayChange(activeDay >= 10 ? 1 : activeDay + 1);
+        onDayChange(activeDay >= totalDays ? 1 : activeDay + 1);
       }, 1600);
     }
     return () => clearInterval(timer);
-  }, [isPlaying, activeDay, onDayChange]);
+  }, [isPlaying, activeDay, onDayChange, totalDays]);
 
   const riskPercent = (currentTelemetry.risk_score * 100).toFixed(1);
   const isDecomp = currentTelemetry.state === 'decompensation';
@@ -213,11 +215,11 @@ export const PatientBanner: React.FC<PatientBannerProps> = ({
           <div className="flex items-center gap-1 font-mono text-[10px] text-[#9EA4B5] pl-2 border-l border-[#323D57]">
             <Zap className="w-3 h-3 text-emerald-400" />
             <span>TIMELINE HORIZON:</span>
-            <strong className="text-[#F2F4F6]">DAY {activeDay} OF 10</strong>
+            <strong className="text-[#F2F4F6]">DAY {activeDay} OF {totalDays}</strong>
           </div>
         </div>
 
-        {/* 10-Day Interactive Stepper */}
+        {/* Dynamic Longitudinal Interactive Stepper */}
         <div className="flex items-center gap-1 flex-1 max-w-lg">
           <button
             onClick={() => onDayChange(Math.max(1, activeDay - 1))}
@@ -227,7 +229,10 @@ export const PatientBanner: React.FC<PatientBannerProps> = ({
             <ChevronLeft className="w-4 h-4" />
           </button>
 
-          <div className="grid grid-cols-10 gap-1 flex-1">
+          <div
+            className="gap-1 flex-1 grid"
+            style={{ gridTemplateColumns: `repeat(${Math.min(12, totalDays)}, minmax(0, 1fr))` }}
+          >
             {patient.telemetry_series.map((d) => {
               const isCurrent = d.day_index === activeDay;
               const dayColor = d.state === 'decompensation' ? 'bg-red-500' : d.state === 'strain' ? 'bg-amber-400' : 'bg-emerald-400';
@@ -250,9 +255,9 @@ export const PatientBanner: React.FC<PatientBannerProps> = ({
           </div>
 
           <button
-            onClick={() => onDayChange(Math.min(10, activeDay + 1))}
+            onClick={() => onDayChange(Math.min(totalDays, activeDay + 1))}
             className="p-1 text-[#9EA4B5] hover:text-[#F2F4F6]"
-            disabled={activeDay >= 10}
+            disabled={activeDay >= totalDays}
           >
             <ChevronRight className="w-4 h-4" />
           </button>

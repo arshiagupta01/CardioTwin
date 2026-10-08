@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { PatientProfile, DayTelemetry } from '../types/clinical';
+import { predictRisk } from '../data/riskApi';
 import { X, PlusCircle, Smartphone, Activity, FileText, CheckCircle2, RefreshCw, Sparkles, ShieldCheck, AlertTriangle } from 'lucide-react';
 
 interface RecordIntakeModalProps {
@@ -134,38 +135,32 @@ export const RecordIntakeModal: React.FC<RecordIntakeModalProps> = ({
     let riskScore: number;
     let riskState: DayTelemetry['state'];
     try {
-      const response = await fetch('/api/risk', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          age: currentPatient.ehr.age,
-          sex: currentPatient.ehr.sex === 'M' ? 1 : 0,
-          bmi: currentPatient.ehr.bmi,
-          systolic_bp: systolicBp,
-          diastolic_bp: diastolicBp,
-          cholesterol,
-          family_history: currentPatient.ehr.family_history,
-          smoker: currentPatient.ehr.smoker,
-          diabetes: currentPatient.ehr.diabetes,
-          hrv_mean: hrv,
-          resting_hr_mean: restingHr,
-          mean_hr: restingHr + 9,
-          sleep_hours: sleepHours,
-          sleep_efficiency: sleepEfficiency,
-          daily_steps: steps,
-          activity_score: activityScore,
-          hrv_drop_from_baseline: hrvDrop,
-          sleep_drop_from_baseline: sleepDrop,
-          step_drop_from_baseline: stepDrop,
-          resting_hr_rise_from_baseline: restingHrRise,
-        }),
+      const result = await predictRisk({
+        age: currentPatient.ehr.age,
+        sex: currentPatient.ehr.sex === 'M' ? 1 : 0,
+        bmi: currentPatient.ehr.bmi,
+        systolic_bp: systolicBp,
+        diastolic_bp: diastolicBp,
+        cholesterol,
+        family_history: currentPatient.ehr.family_history,
+        smoker: currentPatient.ehr.smoker,
+        diabetes: currentPatient.ehr.diabetes,
+        hrv_mean: hrv,
+        resting_hr_mean: restingHr,
+        mean_hr: restingHr + 9,
+        sleep_hours: sleepHours,
+        sleep_efficiency: sleepEfficiency,
+        daily_steps: steps,
+        activity_score: activityScore,
+        hrv_drop_from_baseline: hrvDrop,
+        sleep_drop_from_baseline: sleepDrop,
+        step_drop_from_baseline: stepDrop,
+        resting_hr_rise_from_baseline: restingHrRise,
       });
-      if (!response.ok) throw new Error('Backend inference failed');
-      const result: { risk_score: number; state: DayTelemetry['state'] } = await response.json();
       riskScore = result.risk_score;
       riskState = result.state;
     } catch {
-      setInferenceMessage('Backend inference failed. The record was not saved. Check the API and retry.');
+      setInferenceMessage('Inference failed. Please check inputs and retry.');
       setIsSubmitting(false);
       return;
     }

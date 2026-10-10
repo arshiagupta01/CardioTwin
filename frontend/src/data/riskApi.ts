@@ -1,5 +1,5 @@
 import { DayTelemetry, PatientProfile } from '../types/clinical';
-import { INITIAL_COHORT, evaluateRiskScore } from './cohortData';
+import { evaluateRiskScore } from './cohortData';
 
 export interface ModelFeatures {
   age: number;
@@ -45,18 +45,18 @@ export async function fetchPatients(): Promise<PatientProfile[]> {
 }
 
 export async function savePatient(patient: PatientProfile): Promise<PatientProfile> {
-  try {
-    const response = await fetch(`${API_BASE}/api/patients/${patient.ehr.patient_id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(patient),
-    });
-    if (!response.ok) throw new Error(`Patient save returned ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.warn('Backend API save unavailable; saving in local session state.', error);
-    return patient;
+  const response = await fetch(`${API_BASE}/api/patients/${patient.ehr.patient_id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(patient),
+  });
+  if (!response.ok) {
+    if (response.status === 405) {
+      throw new Error('The live CSV feed is read-only. Add records to the configured feed instead.');
+    }
+    throw new Error(`Patient save returned ${response.status}`);
   }
+  return await response.json();
 }
 
 export function toModelFeatures(

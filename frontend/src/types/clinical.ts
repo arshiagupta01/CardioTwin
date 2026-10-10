@@ -9,10 +9,10 @@ export interface PatientEHR {
   systolic_bp: number;
   diastolic_bp: number;
   cholesterol: number;
-  ldl: number;
-  hdl: number;
-  fasting_glucose: number;
-  hba1c: number;
+  ldl: number | null;
+  hdl: number | null;
+  fasting_glucose: number | null;
+  hba1c: number | null;
   family_history: number;
   smoker: number;
   diabetes: number;
@@ -31,7 +31,7 @@ export interface DayTelemetry {
   sleep_efficiency: number;
   daily_steps: number;
   activity_score: number;
-  risk_event_next_24h: number;
+  risk_event_next_24h: number | null;
   risk_score: number;
   state: RiskState;
 
@@ -65,10 +65,10 @@ export interface PatientProfile {
   current_day: number;
   latest_telemetry: DayTelemetry;
   hardware: {
-    battery_level: number;
+    battery_level: number | null;
     ble_rssi: string;
-    ble_fidelity: number;
-    skin_temp_c: number;
+    ble_fidelity: number | null;
+    skin_temp_c: number | null;
     device_model: string;
     last_sync: string;
   };
@@ -83,6 +83,6 @@ export interface CohortStats {
   cardiovascular_risk_count?: number;
   diabetic_count?: number;
   avg_risk: number;
-  sync_uptime_pct: number;
+  sync_uptime_pct: number | null;
 }
 

@@ -126,7 +126,7 @@ export const WearableTelemetryCol: React.FC<WearableTelemetryColProps> = ({
           >
             <span>WEARABLE SENSOR HARDWARE STATUS</span>
           </ClinicalTooltip>
-          <span className="text-emerald-400 font-mono text-[9px]">98.4% QUALITY</span>
+          <span className="text-emerald-400 font-mono text-[9px]">CSV SNAPSHOT</span>
         </div>
 
         <div className="grid grid-cols-3 gap-2 text-center font-mono text-xs">
@@ -144,7 +144,7 @@ export const WearableTelemetryCol: React.FC<WearableTelemetryColProps> = ({
               </div>
             </ClinicalTooltip>
             <div className="font-bold text-[#F2F4F6] mt-0.5">
-              {patient.hardware.battery_level}%
+              {patient.hardware.battery_level == null ? 'N/A' : `${patient.hardware.battery_level}%`}
             </div>
           </div>
 
@@ -180,7 +180,7 @@ export const WearableTelemetryCol: React.FC<WearableTelemetryColProps> = ({
               </div>
             </ClinicalTooltip>
             <div className="font-bold text-[#F2F4F6] mt-0.5">
-              {patient.hardware.skin_temp_c}°C
+              {patient.hardware.skin_temp_c == null ? 'N/A' : `${patient.hardware.skin_temp_c}°C`}
             </div>
           </div>
         </div>

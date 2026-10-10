@@ -1,6 +1,6 @@
 # CardioTwin
 
-CardioTwin is a synthetic digital-twin healthcare prototype for predicting short-term cardiovascular risk using fused electronic health record (EHR) attributes and wearable health signals.
+CardioTwin is a digital-twin prototype that reads patient and wearable observations from a configured CSV source and scores them with a cardiovascular risk model.
 
 ## Project overview
 
@@ -14,7 +14,7 @@ This is a research and demo project intended for educational, prototype, and pre
 
 ## Why this project exists
 
-Healthcare innovation often starts with synthetic data because real medical records are sensitive and difficult to access. This project creates a realistic, privacy-safe sandbox where a digital twin can be explored, visualized, and explained in a way that is understandable to non-technical stakeholders.
+The dashboard reads from the configured CSV source and does not fall back to the bundled synthetic cohort. The checked-in `live_patients.csv` is a supplied, single-timestamp snapshot with 99 complete records; the pasted PID_034 row was incomplete and is omitted. Replace or update this file with an authorized, current feed to receive changing observations. Synthetic generation scripts remain available for model development and integration testing, but are not a source of real patient data.
 
 ## Project structure
 
@@ -51,17 +51,46 @@ source .venv/bin/activate
 pip install -r requirements.txt -r cardiotwin/requirements.txt
 ```
 
-### 3) Generate the synthetic data
+### 3) Configure the live CSV feed
+
+The API reads `cardiotwin/data/live_patients.csv` by default. Set `CARDIOTWIN_LIVE_CSV_PATH` to an absolute path to use a different CSV. The file must contain one row per patient observation, with EHR fields repeated for each row. Append new timestamped rows as observations arrive; the dashboard rereads the file every 30 seconds. Polling a static file does not make its data live.
+
+Required CSV columns (the feed schema you pasted is accepted):
+
+```text
+patient_id,timestamp,age,sex,bmi,systolic_bp,diastolic_bp,cholesterol,family_history,smoker,diabetes,hrv_mean,resting_hr_mean,mean_hr,sleep_hours,sleep_efficiency,daily_steps,activity_score
+```
+
+Use numeric patient IDs or IDs ending in digits (for example `PID_001`), `M` or `F` for `sex`, and ISO 8601 timestamps (preferably with a timezone). Optional EHR columns are `name`, `diagnosis`, `medications`, `ldl`, `hdl`, `fasting_glucose`, and `hba1c`; absent lab values display as `N/A`. Optional baseline-delta columns are `hrv_drop_from_baseline`, `sleep_drop_from_baseline`, `step_drop_from_baseline`, and `resting_hr_rise_from_baseline`. For compatibility, the API also accepts the typo `hrv_drop_frome_baseline`. If no deltas are supplied, it derives them from the first observation for each patient. The API reports missing or invalid feed data instead of loading the bundled cohort. The live feed is read-only; update the source CSV to change records.
+
+To create schema-compatible synthetic test scenarios, run:
+
+```bash
+python cardiotwin/data/generate_model_scenarios.py
+```
+
+This writes four 100-patient scenario files and `cardiotwin/data/synthetic_model_scenarios/patient_data_all_scenarios.csv` (400 longitudinal observations). To demo the model against that synthetic history, point `CARDIOTWIN_LIVE_CSV_PATH` to the combined file. These generated files are for integration/testing only; they are not live or real patient data, and should not be used for clinical decisions or model training.
+
+Set the path before starting the API. In PowerShell:
+
+```powershell
+$env:CARDIOTWIN_LIVE_CSV_PATH = "D:\data\cardiotwin-live.csv"
+```
+
+On macOS/Linux:
+
+```bash
+export CARDIOTWIN_LIVE_CSV_PATH=/data/cardiotwin-live.csv
+```
+
+### 4) Train or update the model (optional)
+
+The included training pipeline still uses generated data. Do not treat its predictions on a different live population as clinically validated; validate and retrain with appropriately governed, representative data before operational use.
 
 ```bash
 python cardiotwin/data/generate_ehr.py
 python cardiotwin/data/wearable_sim.py
 python cardiotwin/fusion/feature_pipeline.py
-```
-
-### 4) Train the model
-
-```bash
 python cardiotwin/model/train.py
 ```
 
@@ -148,7 +177,7 @@ npm run dev
 ## Notes
 
 - This is a proof-of-concept project.
-- It uses synthetic data only.
+- Risk-model training data is synthetic; live-feed inference is a prototype and is not clinically validated.
 - It is not intended for real medical decision-making or patient care.
 
 ## License

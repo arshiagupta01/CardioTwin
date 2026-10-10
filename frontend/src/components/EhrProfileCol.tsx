@@ -132,8 +132,8 @@ export const EhrProfileCol: React.FC<EhrProfileColProps> = ({ ehr }) => {
             >
               <div className="text-[9px] uppercase tracking-wider text-[#9EA4B5]">LDL-C (ATHERO)</div>
             </ClinicalTooltip>
-            <div className={`text-sm font-mono font-bold mt-0.5 ${ehr.ldl > 100 ? 'text-red-400' : 'text-[#F2F4F6]'}`}>
-              {ehr.ldl}
+            <div className={`text-sm font-mono font-bold mt-0.5 ${ehr.ldl != null && ehr.ldl > 100 ? 'text-red-400' : 'text-[#F2F4F6]'}`}>
+              {ehr.ldl ?? 'N/A'}
             </div>
             <div className="text-[8px] font-mono text-[#9EA4B5]">ref &lt;100 mg/dL</div>
           </div>
@@ -148,8 +148,8 @@ export const EhrProfileCol: React.FC<EhrProfileColProps> = ({ ehr }) => {
             >
               <div className="text-[9px] uppercase tracking-wider text-[#9EA4B5]">HDL (CARDIO-PROT)</div>
             </ClinicalTooltip>
-            <div className={`text-sm font-mono font-bold mt-0.5 ${ehr.hdl < 40 ? 'text-amber-400' : 'text-emerald-400'}`}>
-              {ehr.hdl}
+            <div className={`text-sm font-mono font-bold mt-0.5 ${ehr.hdl != null && ehr.hdl < 40 ? 'text-amber-400' : 'text-emerald-400'}`}>
+              {ehr.hdl ?? 'N/A'}
             </div>
             <div className="text-[8px] font-mono text-[#9EA4B5]">ref &gt;40 mg/dL</div>
           </div>
@@ -180,8 +180,8 @@ export const EhrProfileCol: React.FC<EhrProfileColProps> = ({ ehr }) => {
             >
               <div className="text-[9px] uppercase tracking-wider text-[#9EA4B5]">FASTING GLUCOSE</div>
             </ClinicalTooltip>
-            <div className={`text-sm font-mono font-bold mt-0.5 ${ehr.fasting_glucose > 100 ? 'text-amber-400' : 'text-[#F2F4F6]'}`}>
-              {ehr.fasting_glucose} <span className="text-[9px] font-normal text-[#9EA4B5]">mg/dL</span>
+            <div className={`text-sm font-mono font-bold mt-0.5 ${ehr.fasting_glucose != null && ehr.fasting_glucose > 100 ? 'text-amber-400' : 'text-[#F2F4F6]'}`}>
+              {ehr.fasting_glucose ?? 'N/A'} {ehr.fasting_glucose != null && <span className="text-[9px] font-normal text-[#9EA4B5]">mg/dL</span>}
             </div>
           </div>
 
@@ -195,8 +195,8 @@ export const EhrProfileCol: React.FC<EhrProfileColProps> = ({ ehr }) => {
             >
               <div className="text-[9px] uppercase tracking-wider text-[#9EA4B5]">GLYCATED HbA1c</div>
             </ClinicalTooltip>
-            <div className={`text-sm font-mono font-bold mt-0.5 ${ehr.hba1c > 6.5 ? 'text-red-400' : 'text-[#F2F4F6]'}`}>
-              {ehr.hba1c}% <span className="text-[9px] font-normal text-[#9EA4B5]">{ehr.hba1c > 6.5 ? '(Diabetic)' : ''}</span>
+            <div className={`text-sm font-mono font-bold mt-0.5 ${ehr.hba1c != null && ehr.hba1c > 6.5 ? 'text-red-400' : 'text-[#F2F4F6]'}`}>
+              {ehr.hba1c == null ? 'N/A' : `${ehr.hba1c}%`} <span className="text-[9px] font-normal text-[#9EA4B5]">{ehr.hba1c != null && ehr.hba1c > 6.5 ? '(Diabetic)' : ''}</span>
             </div>
           </div>
         </div>

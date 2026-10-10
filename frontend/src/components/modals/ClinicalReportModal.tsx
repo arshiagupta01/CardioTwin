@@ -72,8 +72,8 @@ Timeline Horizon Evaluated: Day ${activeDay} of 10
 3. BASELINE ELECTRONIC HEALTH RECORD (EHR) PROFILE
 --------------------------------------------------------------------------------
 - Blood Pressure: ${patient.ehr.systolic_bp}/${patient.ehr.diastolic_bp} mmHg
-- Total Cholesterol: ${patient.ehr.cholesterol} mg/dL (LDL: ${patient.ehr.ldl} | HDL: ${patient.ehr.hdl})
-- Fasting Blood Glucose: ${patient.ehr.fasting_glucose} mg/dL | HbA1c: ${patient.ehr.hba1c}%
+- Total Cholesterol: ${patient.ehr.cholesterol} mg/dL (LDL: ${patient.ehr.ldl ?? 'N/A'} | HDL: ${patient.ehr.hdl ?? 'N/A'})
+- Fasting Blood Glucose: ${patient.ehr.fasting_glucose ?? 'N/A'} mg/dL | HbA1c: ${patient.ehr.hba1c == null ? 'N/A' : `${patient.ehr.hba1c}%`}
 - Cardiovascular Comorbidities: Diabetes=${patient.ehr.diabetes ? 'YES' : 'NO'}, Smoker=${patient.ehr.smoker ? 'YES' : 'NO'}, Family History=${patient.ehr.family_history ? 'YES' : 'NO'}
 
 4. AI EXPLAINABILITY & PRIMARY PHYSIOLOGICAL DRIVERS
@@ -260,7 +260,7 @@ Electronically signed and verified by Dr. E. Vance, MD.
             <div>
               <span className="text-slate-500 font-semibold block text-[10px] uppercase">Lipid / Glycemic Baseline</span>
               <span className="font-mono text-slate-800">
-                Chol: {patient.ehr.cholesterol} | HbA1c: {patient.ehr.hba1c}%
+                Chol: {patient.ehr.cholesterol} | HbA1c: {patient.ehr.hba1c == null ? 'N/A' : `${patient.ehr.hba1c}%`}
               </span>
             </div>
           </div>

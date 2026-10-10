@@ -194,13 +194,13 @@ export const CohortView: React.FC<CohortViewProps> = ({
         <div className="rounded-[4px] border border-[#323D57] bg-[#131B2E] p-3 flex flex-col justify-between">
           <div className="flex items-center justify-between text-[#9EA4B5]">
             <span className="text-[10px] uppercase tracking-wider font-semibold">SENSOR STREAM INTEGRITY</span>
-            <Radio className="w-3.5 h-3.5 text-emerald-400 animate-ping" />
+            <Radio className="w-3.5 h-3.5 text-emerald-400" />
           </div>
           <div className="mt-2 flex items-baseline gap-2">
             <span className="text-2xl font-bold font-mono text-emerald-400">
-              {typeof stats.sync_uptime_pct === 'number' ? stats.sync_uptime_pct.toFixed(1) : stats.sync_uptime_pct}%
+              {stats.sync_uptime_pct == null ? 'N/A' : `${stats.sync_uptime_pct.toFixed(1)}%`}
             </span>
-            <span className="text-[10px] font-mono text-[#9EA4B5]">BLE LIVE SYNC</span>
+            <span className="text-[10px] font-mono text-[#9EA4B5]">DEVICE SYNC REPORTED</span>
           </div>
         </div>
       </div>

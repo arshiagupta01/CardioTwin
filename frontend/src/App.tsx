@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { RefreshCw } from 'lucide-react';
 import { PatientProfile } from './types/clinical';
 import { Header } from './components/Header';
 import { PatientBanner } from './components/PatientBanner';
@@ -11,14 +12,13 @@ import { CallModal } from './components/modals/CallModal';
 import { OrderModal } from './components/modals/OrderModal';
 import { FhirModal } from './components/modals/FhirModal';
 import { ClinicalReportModal } from './components/modals/ClinicalReportModal';
-import { INITIAL_COHORT } from './data/cohortData';
 import { fetchPatients, savePatient } from './data/riskApi';
 
 export function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('cardiotwin-theme') !== 'light');
-  const [cohort, setCohort] = useState<PatientProfile[]>(INITIAL_COHORT);
-  const [cohortLoading, setCohortLoading] = useState(false);
-  const [cohortError, setCohortError] = useState(false);
+  const [cohort, setCohort] = useState<PatientProfile[]>([]);
+  const [cohortLoading, setCohortLoading] = useState(true);
+  const [cohortError, setCohortError] = useState('');
   const [selectedPatientId, setSelectedPatientId] = useState<number>(101);
   const [currentView, setCurrentView] = useState<'cohort' | 'detail'>('detail');
   const [activeDay, setActiveDay] = useState<number>(7);
@@ -33,7 +33,7 @@ export function App() {
 
 
   // Active patient object
-  const activePatient = cohort.find((p) => p.ehr.patient_id === selectedPatientId) || cohort[0] || INITIAL_COHORT[0];
+  const activePatient = cohort.find((p) => p.ehr.patient_id === selectedPatientId) || cohort[0];
   const currentStats = {
     total_monitored: cohort.length,
     critical_count: cohort.filter((patient) => patient.latest_telemetry.state === 'decompensation' || patient.latest_telemetry.risk_score >= 0.65).length,
@@ -43,7 +43,12 @@ export function App() {
     cardiovascular_risk_count: cohort.filter((patient) => patient.ehr.diagnosis.toLowerCase().includes('cardiovascular')).length,
     diabetic_count: cohort.filter((patient) => patient.ehr.diabetes === 1).length,
     avg_risk: cohort.length ? cohort.reduce((sum, patient) => sum + patient.latest_telemetry.risk_score, 0) / cohort.length : 0,
-    sync_uptime_pct: cohort.length ? Number((cohort.reduce((sum, patient) => sum + patient.hardware.ble_fidelity, 0) / cohort.length).toFixed(1)) : 0,
+    sync_uptime_pct: (() => {
+      const reportedFidelities = cohort.map((patient) => patient.hardware.ble_fidelity).filter((value): value is number => value != null);
+      return reportedFidelities.length
+        ? Number((reportedFidelities.reduce((sum, value) => sum + value, 0) / reportedFidelities.length).toFixed(1))
+        : null;
+    })(),
   };
 
   useEffect(() => {
@@ -54,48 +59,33 @@ export function App() {
   }, [isDarkMode]);
 
   const handleRefreshCohort = async () => {
+    setCohortLoading(true);
     try {
       const patients = await fetchPatients();
-      if (patients && patients.length > 0) {
-        setCohort(patients);
-        setModelConnected(true);
-      }
+      setCohort(patients);
+      setSelectedPatientId((current) =>
+        patients.some((patient) => patient.ehr.patient_id === current)
+          ? current
+          : patients[0]?.ehr.patient_id ?? current
+      );
+      setModelConnected(true);
+      setCohortError('');
     } catch (err) {
-      console.warn('Backend refresh unavailable; retaining active cohort.', err);
+      console.warn('Live patient feed is unavailable.', err);
+      setCohort([]);
       setModelConnected(false);
+      setCohortError(err instanceof Error ? err.message : 'Live patient feed is unavailable.');
+    } finally {
+      setCohortLoading(false);
     }
   };
 
   useEffect(() => {
-    let cancelled = false;
-    let timer: number | undefined;
-    let attempt = 0;
-    const maxAttempts = 6;
-
-    const loadCohort = async () => {
-      try {
-        const patients = await fetchPatients();
-        if (cancelled) return;
-        if (patients && patients.length > 0) {
-          setCohort(patients);
-          setModelConnected(true);
-          return;
-        }
-      } catch (error) {
-        if (cancelled) return;
-        setModelConnected(false);
-      }
-
-      if (attempt < maxAttempts && !cancelled) {
-        attempt += 1;
-        timer = window.setTimeout(loadCohort, 2500);
-      }
-    };
-
-    void loadCohort();
+    const initialRefresh = window.setTimeout(() => void handleRefreshCohort(), 0);
+    const timer = window.setInterval(() => void handleRefreshCohort(), 30_000);
     return () => {
-      cancelled = true;
-      if (timer) clearTimeout(timer);
+      window.clearTimeout(initialRefresh);
+      window.clearInterval(timer);
     };
   }, []);
 
@@ -156,7 +146,23 @@ export function App() {
 
       {/* Main Workspace Container */}
       <main className="flex-1 p-3 md:p-4 max-w-[1680px] w-full mx-auto">
-        {currentView === 'cohort' ? (
+        {!activePatient ? (
+          <section className="min-h-[50vh] flex flex-col items-center justify-center text-center gap-3">
+            <h1 className="text-lg font-bold font-mono text-[#F2F4F6]">LIVE PATIENT FEED</h1>
+            <p className="max-w-xl text-sm text-[#9EA4B5]">
+              {cohortLoading ? 'Connecting to the configured data feed…' : cohortError || 'The live feed is connected but contains no patient records.'}
+            </p>
+            <button
+              type="button"
+              onClick={() => void handleRefreshCohort()}
+              disabled={cohortLoading}
+              className="px-3 py-2 border border-[#323D57] text-xs font-mono text-[#F2F4F6] flex items-center gap-2 disabled:opacity-50"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              RETRY FEED
+            </button>
+          </section>
+        ) : currentView === 'cohort' ? (
           /* View 1: Doctor's Cohort Triage Dashboard */
           <CohortView
             cohort={cohort}

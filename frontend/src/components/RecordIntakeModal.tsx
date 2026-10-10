@@ -48,7 +48,7 @@ export const RecordIntakeModal: React.FC<RecordIntakeModalProps> = ({
     setSystolicBp(patient.ehr.systolic_bp);
     setDiastolicBp(patient.ehr.diastolic_bp);
     setCholesterol(patient.ehr.cholesterol);
-    setGlucose(patient.ehr.fasting_glucose);
+    setGlucose(patient.ehr.fasting_glucose ?? 128);
   };
 
   const handlePatientChange = (patientId: number) => {
@@ -203,8 +203,8 @@ export const RecordIntakeModal: React.FC<RecordIntakeModalProps> = ({
       await onRecordAdded(updatedProfile);
       setFormFromPatient(updatedProfile);
       onClose();
-    } catch {
-      setInferenceMessage('The model scored this record, but the backend could not save it. Retry the submission.');
+    } catch (error) {
+      setInferenceMessage(error instanceof Error ? error.message : 'The live feed is read-only.');
     } finally {
       setIsSubmitting(false);
     }

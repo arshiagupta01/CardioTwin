@@ -103,7 +103,7 @@ export const ExplainabilityCol: React.FC<ExplainabilityColProps> = ({
           </h3>
         </div>
         <span className={`text-[10px] font-mono ${modelConnected ? 'text-emerald-400' : 'text-amber-400'}`}>
-          {modelConnected ? `BACKEND RANDOM FOREST${modelAuc === null ? '' : ` · AUC ${modelAuc.toFixed(3)}`}` : 'DEMO SCORES · API OFFLINE'}
+          {modelConnected ? `RANDOM FOREST · SYNTHETIC DATA${modelAuc === null ? '' : ` · AUC ${modelAuc.toFixed(3)}`}` : 'DEMO SCORES · API OFFLINE'}
         </span>
       </div>
 
@@ -145,6 +145,9 @@ export const ExplainabilityCol: React.FC<ExplainabilityColProps> = ({
             );
           })}
           {importance.length === 0 && <div className="text-[10px] text-amber-400">Model importance unavailable while backend is offline.</div>}
+          <div className="text-[9px] text-amber-300 border-t border-[#323D57] pt-2">
+            Trained and validated on simulated data only. This score is not clinically validated.
+          </div>
         </div>
       </div>
 

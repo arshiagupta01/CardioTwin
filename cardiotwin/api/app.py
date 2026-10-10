@@ -11,6 +11,8 @@ from pydantic import BaseModel
 app = FastAPI(title="CardioTwin API")
 BASE_DIR = Path(__file__).resolve().parents[1]
 MODEL_PATH = BASE_DIR / "model" / "cardiotwin_model.joblib"
+CALIBRATOR_PATH = BASE_DIR / "model" / "cardiotwin_calibrator.joblib"
+SUMMARY_PATH = BASE_DIR / "model" / "model_summary.json"
 DATA_DIR = BASE_DIR / "data" / "sample_patients"
 PATIENT_DB = BASE_DIR / "data" / "cardiotwin.sqlite3"
 FEATURES = [
@@ -69,6 +71,39 @@ def load_model():
     return joblib.load(MODEL_PATH)
 
 
+@lru_cache(maxsize=1)
+def load_calibrator():
+    if not CALIBRATOR_PATH.exists():
+        return None
+    return joblib.load(CALIBRATOR_PATH)
+
+
+@lru_cache(maxsize=1)
+def load_model_summary() -> dict:
+    if not SUMMARY_PATH.exists():
+        return {}
+    return json.loads(SUMMARY_PATH.read_text(encoding="utf-8"))
+
+
+def predict_probabilities(rows: pd.DataFrame):
+    raw_scores = load_model().predict_proba(rows)[:, 1]
+    calibrator = load_calibrator()
+    if calibrator is None:
+        return raw_scores
+    return calibrator.predict_proba(raw_scores.reshape(-1, 1))[:, 1]
+
+
+def classify_risk(score: float) -> tuple[str, str]:
+    thresholds = load_model_summary().get("thresholds", {})
+    strain_threshold = float(thresholds.get("strain", 0.25))
+    high_threshold = float(thresholds.get("high_risk", 0.65))
+    if score >= high_threshold:
+        return "decompensation", "High"
+    if score >= strain_threshold:
+        return "strain", "Moderate"
+    return "homeostasis", "Low"
+
+
 def _connect_patient_db() -> sqlite3.Connection:
     PATIENT_DB.parent.mkdir(parents=True, exist_ok=True)
     connection = sqlite3.connect(PATIENT_DB)
@@ -88,11 +123,10 @@ def _seed_patient_db(connection: sqlite3.Connection) -> None:
     ehr_df = pd.read_csv(DATA_DIR / "synthetic_ehr.csv")
     data = pd.read_csv(DATA_DIR / "fused_dataset.csv").sort_values(["patient_id", "day_index"])
     data["sex"] = data["sex"].map({"M": 1, "F": 0}).fillna(data["sex"])
-    model = load_model()
-    scores = model.predict_proba(data[FEATURES])[:, 1]
+    scores = predict_probabilities(data[FEATURES])
     data = data.copy()
     data["risk_score"] = scores
-    data["state"] = ["decompensation" if score >= 0.65 else "strain" if score >= 0.25 else "homeostasis" for score in scores]
+    data["state"] = [classify_risk(float(score))[0] for score in scores]
 
     profiles = []
     for _, ehr_row in ehr_df.iterrows():
@@ -165,9 +199,58 @@ def _read_profiles() -> list[dict]:
         with connection:
             _seed_patient_db(connection)
             rows = connection.execute("SELECT profile_json FROM patients ORDER BY patient_id").fetchall()
+            profiles = [json.loads(row[0]) for row in rows]
+            feature_rows = []
+            positions = []
+            for profile_index, profile in enumerate(profiles):
+                ehr = profile["ehr"]
+                telemetry = profile["telemetry_series"]
+                if not telemetry:
+                    continue
+                baseline = telemetry[0]
+                for day_index, day in enumerate(telemetry):
+                    feature_rows.append({
+                        "age": ehr["age"],
+                        "sex": 1 if ehr["sex"] == "M" else 0,
+                        "bmi": ehr["bmi"],
+                        "systolic_bp": ehr["systolic_bp"],
+                        "diastolic_bp": ehr["diastolic_bp"],
+                        "cholesterol": ehr["cholesterol"],
+                        "family_history": ehr["family_history"],
+                        "smoker": ehr["smoker"],
+                        "diabetes": ehr["diabetes"],
+                        "hrv_mean": day["hrv_mean"],
+                        "resting_hr_mean": day["resting_hr_mean"],
+                        "mean_hr": day["mean_hr"],
+                        "sleep_hours": day["sleep_hours"],
+                        "sleep_efficiency": day["sleep_efficiency"],
+                        "daily_steps": day["daily_steps"],
+                        "activity_score": day["activity_score"],
+                        "hrv_drop_from_baseline": baseline["hrv_mean"] - day["hrv_mean"],
+                        "sleep_drop_from_baseline": baseline["sleep_hours"] - day["sleep_hours"],
+                        "step_drop_from_baseline": baseline["daily_steps"] - day["daily_steps"],
+                        "resting_hr_rise_from_baseline": day["resting_hr_mean"] - baseline["resting_hr_mean"],
+                    })
+                    positions.append((profile_index, day_index))
+            if feature_rows:
+                scores = predict_probabilities(pd.DataFrame(feature_rows, columns=FEATURES))
+                for (profile_index, day_index), score in zip(positions, scores):
+                    day = profiles[profile_index]["telemetry_series"][day_index]
+                    day["risk_score"] = float(score)
+                    day["state"] = classify_risk(float(score))[0]
+                for profile in profiles:
+                    telemetry = profile["telemetry_series"]
+                    if telemetry:
+                        profile["latest_telemetry"] = next(
+                            (day for day in telemetry if day["day_index"] == profile["current_day"]), telemetry[-1]
+                        )
+                connection.executemany(
+                    "UPDATE patients SET profile_json = ? WHERE patient_id = ?",
+                    [(json.dumps(profile), profile["ehr"]["patient_id"]) for profile in profiles],
+                )
     finally:
         connection.close()
-    return [json.loads(row[0]) for row in rows]
+    return profiles
 
 
 @app.get("/")
@@ -238,11 +321,9 @@ def predict_risk(features: RiskInput) -> dict:
     if not MODEL_PATH.exists():
         raise HTTPException(status_code=503, detail="The trained risk model is not available")
 
-    model = load_model()
     row = pd.DataFrame([features.model_dump()], columns=FEATURES)
-    score = float(model.predict_proba(row)[0][1])
-    state = "decompensation" if score >= 0.65 else "strain" if score >= 0.25 else "homeostasis"
-    risk_level = "High" if score >= 0.65 else "Moderate" if score >= 0.25 else "Low"
+    score = float(predict_probabilities(row)[0])
+    state, risk_level = classify_risk(score)
 
     return {"risk_score": score, "risk_level": risk_level, "state": state}
 
@@ -254,14 +335,12 @@ def predict_risk_batch(payload: BatchRiskInput) -> dict:
     if not payload.records:
         return {"predictions": []}
 
-    model = load_model()
     rows = pd.DataFrame([record.model_dump() for record in payload.records], columns=FEATURES)
-    scores = model.predict_proba(rows)[:, 1]
+    scores = predict_probabilities(rows)
     predictions = []
     for score in scores:
         score = float(score)
-        state = "decompensation" if score >= 0.65 else "strain" if score >= 0.25 else "homeostasis"
-        risk_level = "High" if score >= 0.65 else "Moderate" if score >= 0.25 else "Low"
+        state, risk_level = classify_risk(score)
         predictions.append({"risk_score": score, "risk_level": risk_level, "state": state})
     return {"predictions": predictions}
 
@@ -276,13 +355,11 @@ def model_importance() -> dict:
         key=lambda item: item[1],
         reverse=True,
     )
-    summary_path = BASE_DIR / "model" / "model_summary.json"
-    summary = {}
-    if summary_path.exists():
-        import json
-        summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    summary = load_model_summary()
     return {
-        "model": "RandomForestClassifier",
+        "model": summary.get("model", "Unknown"),
         "roc_auc": summary.get("roc_auc"),
+        "validation_data": summary.get("validation_data"),
+        "clinical_use": summary.get("clinical_use", False),
         "features": [{"feature": name, "importance": float(value)} for name, value in importance],
     }

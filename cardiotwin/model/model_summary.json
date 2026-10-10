@@ -21,50 +21,50 @@
     "step_drop_from_baseline",
     "resting_hr_rise_from_baseline"
   ],
-  "roc_auc": 0.9117,
-  "average_precision": 0.5503,
+  "roc_auc": 0.9515,
+  "average_precision": 0.8426,
   "validation_split": "patient-disjoint",
   "validation_patients": 40,
   "threshold_metrics": {
     "0.25": {
-      "precision": 0.3944,
-      "recall": 0.7,
+      "precision": 0.5357,
+      "recall": 0.9375,
       "confusion_matrix": [
         [
-          317,
-          43
+          255,
+          65
         ],
         [
-          12,
-          28
+          5,
+          75
         ]
       ]
     },
     "0.5": {
-      "precision": 0.5652,
-      "recall": 0.325,
+      "precision": 0.6273,
+      "recall": 0.8625,
       "confusion_matrix": [
         [
-          350,
-          10
+          279,
+          41
         ],
         [
-          27,
-          13
+          11,
+          69
         ]
       ]
     },
     "0.65": {
-      "precision": 0.6364,
-      "recall": 0.175,
+      "precision": 0.7869,
+      "recall": 0.6,
       "confusion_matrix": [
         [
-          356,
-          4
+          307,
+          13
         ],
         [
-          33,
-          7
+          32,
+          48
         ]
       ]
     }

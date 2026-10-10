@@ -103,7 +103,13 @@ export async function predictRiskBatch(features: ModelFeatures[]): Promise<Model
   return result.predictions;
 }
 
-export async function fetchModelImportance(): Promise<{ model: string; roc_auc: number | null; features: ModelImportance[] }> {
+export async function fetchModelImportance(): Promise<{
+  model: string;
+  roc_auc: number | null;
+  validation_data: string | null;
+  clinical_use: boolean;
+  features: ModelImportance[];
+}> {
   const response = await fetch('/api/model/importance');
   if (!response.ok) throw new Error(`Model metadata API returned ${response.status}`);
   return response.json();

@@ -28,9 +28,21 @@ export const OscilloscopeMonitor: React.FC<OscilloscopeMonitorProps> = ({
     decompensation: '#F87171' // Crimson alert trace
   }[state];
 
+  // Keep dynamic props in refs so the animation loop NEVER restarts or resets sweepX
+  const propsRef = useRef({ bpm, hrv, state, speed, gain, soundEnabled, traceColors });
+  useEffect(() => {
+    propsRef.current = { bpm, hrv, state, speed, gain, soundEnabled, traceColors };
+  }, [bpm, hrv, state, speed, gain, soundEnabled, traceColors]);
+
+  const sweepXRef = useRef(0);
+  const prevYRef = useRef<number | null>(null);
+  const lastBeatTimeRef = useRef(performance.now());
+  const lastFrameTimeRef = useRef(performance.now());
+  const hasBeepedRef = useRef(false);
+
   // Play synthetic clinical monitor beep
   const playCardiacBeep = () => {
-    if (!soundEnabled) return;
+    if (!propsRef.current.soundEnabled) return;
     try {
       if (!audioCtxRef.current) {
         audioCtxRef.current = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
@@ -42,8 +54,8 @@ export const OscilloscopeMonitor: React.FC<OscilloscopeMonitorProps> = ({
       const osc = ctx.createOscillator();
       const gainNode = ctx.createGain();
 
-      // Pitch based on state: normal (880Hz A5), warning (740Hz), decompensation (620Hz)
-      const freq = state === 'homeostasis' ? 880 : state === 'strain' ? 740 : 580;
+      const currentState = propsRef.current.state;
+      const freq = currentState === 'homeostasis' ? 880 : currentState === 'strain' ? 740 : 580;
       osc.type = 'sine';
       osc.frequency.setValueAtTime(freq, ctx.currentTime);
 
@@ -67,96 +79,142 @@ export const OscilloscopeMonitor: React.FC<OscilloscopeMonitorProps> = ({
     if (!ctx) return;
 
     let animationFrameId: number;
-    let sweepX = 0;
-    let lastBeatTime = performance.now();
-    const pixelRatio = window.devicePixelRatio || 1;
 
-    // Buffer to store recent history for phosphor trail
-    const width = canvas.width;
-    const canvasHeight = canvas.height;
-    const centerY = canvasHeight / 2;
+    // Resize canvas to match display size for crisp rendering
+    const updateCanvasSize = () => {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const targetWidth = Math.floor(rect.width * dpr);
+      const targetHeight = Math.floor(rect.height * dpr);
 
-    const render = (time: number) => {
-      const beatInterval = (60 / Math.max(45, bpm)) * 1000;
-      const timeSinceLastBeat = (time - lastBeatTime) % beatInterval;
-      const phase = timeSinceLastBeat / beatInterval; // 0.0 to 1.0
+      if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        // Fill initial background with medical grid
+        ctx.fillStyle = '#050B14';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+    };
 
-      // Synthesize realistic P-Q-R-S-T complex
+    updateCanvasSize();
+    window.addEventListener('resize', updateCanvasSize);
+
+    const render = (now: number) => {
+      const { bpm: currentBpm, gain: currentGain, speed: currentSpeed, state: currentState, traceColors: currentTraceColor } = propsRef.current;
+
+      const width = canvas.width;
+      const canvasHeight = canvas.height;
+      const centerY = canvasHeight / 2;
+
+      // Calculate time delta for smooth frame-rate independent sweep
+      const dt = Math.min(0.05, (now - lastFrameTimeRef.current) / 1000);
+      lastFrameTimeRef.current = now;
+
+      // Heartbeat interval and phase calculation
+      const safeBpm = Math.max(40, Math.min(200, currentBpm));
+      const beatInterval = (60 / safeBpm) * 1000;
+      const timeSinceLastBeat = now - lastBeatTimeRef.current;
+
+      if (timeSinceLastBeat >= beatInterval) {
+        lastBeatTimeRef.current = now;
+        hasBeepedRef.current = false;
+      }
+
+      const phase = Math.min(1.0, Math.max(0.0, (now - lastBeatTimeRef.current) / beatInterval));
+
+      // Synthesize realistic P-Q-R-S-T cardiac complex
       let voltage = 0;
-      const gainMultiplier = gain === '2x' ? 1.6 : 1.0;
+      const gainMultiplier = currentGain === '2x' ? 1.6 : 1.0;
 
       if (phase >= 0.08 && phase < 0.18) {
         // P-wave (atrial depolarization)
         const pPhase = (phase - 0.08) / 0.10;
-        voltage = Math.sin(pPhase * Math.PI) * 0.15;
+        voltage = Math.sin(pPhase * Math.PI) * 0.16;
       } else if (phase >= 0.22 && phase < 0.24) {
         // Q-dip (septal depolarization)
-        voltage = -0.15;
+        voltage = -0.18;
       } else if (phase >= 0.24 && phase < 0.28) {
         // R-peak (ventricular depolarization)
         const rPhase = (phase - 0.24) / 0.04;
         voltage = Math.sin(rPhase * Math.PI) * 1.35;
-        // Trigger beep right at apex of R-wave
-        if (phase > 0.25 && phase < 0.26) {
+        // Trigger cardiac audio beep once at peak
+        if (!hasBeepedRef.current && phase >= 0.25) {
+          hasBeepedRef.current = true;
           playCardiacBeep();
         }
       } else if (phase >= 0.28 && phase < 0.31) {
-        // S-dip (ventricular depolarization end)
-        voltage = -0.35;
+        // S-dip (ventricular depolarization completion)
+        voltage = -0.38;
       } else if (phase >= 0.38 && phase < 0.54) {
         // T-wave (ventricular repolarization)
         const tPhase = (phase - 0.38) / 0.16;
         voltage = Math.sin(tPhase * Math.PI) * 0.28;
       } else {
-        // Baseline noise / isoelectric line with slight respiratory wander
-        voltage = (Math.sin(time * 0.002) * 0.02) + ((Math.random() - 0.5) * 0.015);
+        // Isoelectric baseline with mild physiological noise
+        voltage = Math.sin(now * 0.002) * 0.02 + ((Math.random() - 0.5) * 0.012);
       }
 
-      const y = centerY - (voltage * 38 * gainMultiplier);
+      const y = centerY - voltage * (canvasHeight * 0.32) * gainMultiplier;
 
-      // Sweep advance speed: 25 mm/s = ~2.5px/frame, 50 mm/s = ~5px/frame
-      const sweepAdvance = speed === '50' ? 4.5 : 2.5;
+      // Sweep advance speed: 25 mm/s = ~120px/s, 50 mm/s = ~240px/s (scaled to canvas resolution)
+      const pxPerSec = (currentSpeed === '50' ? 240 : 130) * (canvas.width / 640);
+      const sweepAdvance = Math.max(1.5, pxPerSec * dt);
 
-      // Clear a 12px vertical band ahead of the sweep line (erase beam)
+      const sweepX = sweepXRef.current;
+      const nextX = sweepX + sweepAdvance;
+
+      // 1. Clear vertical erase beam ahead of the sweep line
+      const eraseBandWidth = Math.max(16, sweepAdvance * 4);
       ctx.fillStyle = '#050B14';
-      ctx.fillRect(sweepX, 0, 16, canvasHeight);
+      ctx.fillRect(sweepX, 0, eraseBandWidth, canvasHeight);
 
-      // Redraw faint medical grid within erased segment
-      ctx.strokeStyle = state === 'decompensation'
-        ? 'rgba(248, 113, 113, 0.08)'
-        : state === 'strain'
-          ? 'rgba(251, 191, 36, 0.08)'
-          : 'rgba(52, 211, 153, 0.08)';
+      // 2. Redraw faint medical ECG grid within erased band
+      ctx.strokeStyle = currentState === 'decompensation'
+        ? 'rgba(248, 113, 113, 0.09)'
+        : currentState === 'strain'
+          ? 'rgba(251, 191, 36, 0.09)'
+          : 'rgba(52, 211, 153, 0.09)';
       ctx.lineWidth = 1;
       ctx.beginPath();
-      // Draw 20px grid lines
-      for (let gx = Math.floor(sweepX / 20) * 20; gx < sweepX + 16; gx += 20) {
+      const gridSpacing = 20 * (window.devicePixelRatio || 1);
+      const startGridX = Math.floor(sweepX / gridSpacing) * gridSpacing;
+      for (let gx = startGridX; gx < sweepX + eraseBandWidth; gx += gridSpacing) {
         ctx.moveTo(gx, 0);
         ctx.lineTo(gx, canvasHeight);
       }
       ctx.moveTo(sweepX, centerY);
-      ctx.lineTo(sweepX + 16, centerY);
+      ctx.lineTo(sweepX + eraseBandWidth, centerY);
       ctx.stroke();
 
-      // Draw the active trace dot and phosphorescent glow
+      // 3. Draw continuous smooth ECG trace line connecting previous frame to current frame
+      const prevY = prevYRef.current !== null ? prevYRef.current : y;
       ctx.shadowBlur = 8;
-      ctx.shadowColor = traceColors;
-      ctx.strokeStyle = traceColors;
-      ctx.lineWidth = 2.2;
+      ctx.shadowColor = currentTraceColor;
+      ctx.strokeStyle = currentTraceColor;
+      ctx.lineWidth = 2.4 * (window.devicePixelRatio || 1);
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
 
       ctx.beginPath();
-      ctx.moveTo(sweepX, y);
-      ctx.lineTo(sweepX + sweepAdvance, y);
+      ctx.moveTo(sweepX, prevY);
+      ctx.lineTo(nextX, y);
       ctx.stroke();
 
-      // Draw bright leading sweep head
+      // 4. Draw bright leading phosphor sweep head dot
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = '#FFFFFF';
       ctx.fillStyle = '#FFFFFF';
-      ctx.fillRect(sweepX + sweepAdvance, y - 1, 2, 2);
+      ctx.beginPath();
+      ctx.arc(nextX, y, 2.2 * (window.devicePixelRatio || 1), 0, Math.PI * 2);
+      ctx.fill();
 
       // Advance sweep head
-      sweepX += sweepAdvance;
-      if (sweepX >= width) {
-        sweepX = 0;
+      prevYRef.current = y;
+      if (nextX >= width) {
+        sweepXRef.current = 0;
+        prevYRef.current = null;
+      } else {
+        sweepXRef.current = nextX;
       }
 
       animationFrameId = requestAnimationFrame(render);
@@ -166,8 +224,9 @@ export const OscilloscopeMonitor: React.FC<OscilloscopeMonitorProps> = ({
 
     return () => {
       cancelAnimationFrame(animationFrameId);
+      window.removeEventListener('resize', updateCanvasSize);
     };
-  }, [bpm, hrv, state, speed, gain, soundEnabled]);
+  }, []); // Run once on mount! Loop persists continuously across all live vitals updates
 
   return (
     <div className="relative rounded-[4px] border border-[#323D57] bg-[#050B14] overflow-hidden flex flex-col">

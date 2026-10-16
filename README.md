@@ -24,7 +24,37 @@ Cardiovascular diseases (CVD) account for over **28% of all deaths in India**, s
 
 ---
 
-## 2. System Architecture
+## 2. 📸 Application Visual Tour & Key Feature Showcase
+
+| 🫀 **1. Single-Patient Digital Twin Console (Dark Mode)** |
+| :--- |
+| ![Patient Twin Console (Dark Mode)](docs/screenshots/01_patient_twin_console_dark.png) |
+| *Real-time telemetry fusion dashboard displaying 128 Hz sweeping Lead II CRT ECG, live cardiac acoustic beeps, 96% acute decompensation risk, bi-axial Shadow Twin residual drift radar, and AI 4-Pillar GDMT pharmacotherapy co-pilot.* |
+
+<br/>
+
+| 🏥 **2. ICU Central Station Ward & Cohort Triage Grid** |
+| :--- |
+| ![ICU Central Station Cohort Triage](docs/screenshots/02_icu_ward_cohort_triage.png) |
+| *Central telemetry station monitoring 200 active patient twins simultaneously. Features 1-click risk stratification (Critical / High / Moderate / Stable), 54 early-warning flags, and instantaneous bed navigation.* |
+
+<br/>
+
+| ⏳ **3. 10-Day Longitudinal Decompensation Cascade (Day 1 Early Warning)** |
+| :--- |
+| ![10-Day Longitudinal Cascade](docs/screenshots/03_longitudinal_cascade_day1.png) |
+| *Interactive 10-day timeline scrubber demonstrating early subclinical autonomic divergence (vagal withdrawal via RMSSD drop & sympathetic compensatory tachycardia) starting at Day 1, forecasting acute heart failure 48h before overt symptoms.* |
+
+<br/>
+
+| ☀️ **4. Hospital-Grade Clinical Light Mode** |
+| :--- |
+| ![Hospital-Grade Clinical Light Mode](docs/screenshots/04_clinical_light_mode.png) |
+| *High-contrast daylight theme tailored for bright ICU ward lighting and physician daylight rounds, featuring sterile card borders, accessible contrast ratios, and crisp semantic status indicators.* |
+
+---
+
+## 3. System Architecture
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────┐
@@ -73,7 +103,7 @@ Cardiovascular diseases (CVD) account for over **28% of all deaths in India**, s
 
 ---
 
-## 3. Core Differentiators & Key Innovations
+## 4. Core Differentiators & Key Innovations
 
 ### A. 🎯 60-Second Interactive Judge Tour
 Built specifically for hackathon evaluators. A single click on **`▶ 60s JUDGE TOUR`** in the header initiates a curated, guided walk-through across:
@@ -113,7 +143,7 @@ Answers the fundamental question: *What makes this a Digital Twin rather than an
 
 ---
 
-## 4. Model Performance & Validation
+## 5. Model Performance & Validation
 
 The predictive core is trained on multi-day fused patient trajectories:
 
@@ -127,7 +157,7 @@ The predictive core is trained on multi-day fused patient trajectories:
 
 ---
 
-## 5. Clinical Interoperability & HL7 FHIR R4
+## 6. Clinical Interoperability & HL7 FHIR R4
 
 CardioTwin supports bidirectional clinical data exchange:
 - **HL7 FHIR Release 4 Bundle**:
@@ -139,7 +169,7 @@ CardioTwin supports bidirectional clinical data exchange:
 
 ---
 
-## 6. Repository Structure
+## 7. Repository Structure
 
 ```
 CardioTwin/
@@ -177,12 +207,18 @@ CardioTwin/
 │   │   ├── data/                  # API client and offline fallback cohort data
 │   │   └── types/clinical.ts      # Clinical TypeScript interfaces & state schemas
 │   └── package.json
+├── docs/
+│   └── screenshots/               # High-resolution clinical UI feature captures
+│       ├── 01_patient_twin_console_dark.png
+│       ├── 02_icu_ward_cohort_triage.png
+│       ├── 03_longitudinal_cascade_day1.png
+│       └── 04_clinical_light_mode.png
 └── README.md
 ```
 
 ---
 
-## 7. Quick Start & Setup Guide
+## 8. Quick Start & Setup Guide
 
 ### Prerequisites
 - Python 3.10+
@@ -212,7 +248,7 @@ Open `http://127.0.0.1:5173` in your browser.
 
 ---
 
-## 8. Hackathon Submission Information
+## 9. Hackathon Submission Information
 
 - **Event:** Reimagining and Reforming Healthcare in India Summit 2026
 - **Challenge:** CRP Digital Twin Challenge 2026 (Happiest Health)
@@ -223,5 +259,5 @@ Open `http://127.0.0.1:5173` in your browser.
 
 ---
 
-## 9. Ethical AI & Clinical Disclaimers
+## 10. Ethical AI & Clinical Disclaimers
 *CardioTwin is a clinical research proof-of-concept developed for educational and hackathon demonstration purposes. It utilizes synthetic physiological data calibrated to peer-reviewed cardiological distributions and does not contain Protected Health Information (PHI). Not for direct diagnostic use.*

@@ -26,31 +26,38 @@ Cardiovascular diseases (CVD) account for over **28% of all deaths in India**, s
 
 ## 2. 📸 Application Visual Tour & Key Feature Showcase
 
-| 🫀 **1. Single-Patient Digital Twin Console (Dark Mode)** |
+| 🫀 **1. Single-Patient Bio-Digital Twin Console (Dark Mode)** |
 | :--- |
 | ![Patient Twin Console (Dark Mode)](docs/screenshots/01_patient_twin_console_dark.png) |
-| *Real-time telemetry fusion dashboard displaying 128 Hz sweeping Lead II CRT ECG, live cardiac acoustic beeps, 96% acute decompensation risk, bi-axial Shadow Twin residual drift radar, and AI 4-Pillar GDMT pharmacotherapy co-pilot.* |
+| *Real-time multi-modal telemetry fusion dashboard featuring 128 Hz sweeping Lead II CRT ECG, rate-synced biophysical 3D cardiac model, live autonomic strain detection, static hospital EHR baseline labs, and Gini feature importance breakdown.* |
 
 <br/>
 
 | 🏥 **2. ICU Central Station Ward & Cohort Triage Grid** |
 | :--- |
 | ![ICU Central Station Cohort Triage](docs/screenshots/02_icu_ward_cohort_triage.png) |
-| *Central telemetry station monitoring 200 active patient twins simultaneously. Features 1-click risk stratification (Critical / High / Moderate / Stable), 54 early-warning flags, and instantaneous bed navigation.* |
+| *Central surveillance station tracking 200 active patient twins simultaneously. Features 1-click risk stratification filters (Critical 53 / Strain 39 / Stable 108), real-time bedside micro-ECG waveforms, early-warning crisis alerts, and 98.4% sensor stream integrity telemetry.* |
 
 <br/>
 
-| ⏳ **3. 10-Day Longitudinal Decompensation Cascade (Day 1 Early Warning)** |
+| 🧪 **3. In Silico Counterfactual "What-If" Sandbox & GDMT Co-Pilot** |
 | :--- |
-| ![10-Day Longitudinal Cascade](docs/screenshots/03_longitudinal_cascade_day1.png) |
-| *Interactive 10-day timeline scrubber demonstrating early subclinical autonomic divergence (vagal withdrawal via RMSSD drop & sympathetic compensatory tachycardia) starting at Day 1, forecasting acute heart failure 48h before overt symptoms.* |
+| ![In Silico Sandbox and GDMT Co-Pilot](docs/screenshots/03_in_silico_simulation_gdmt.png) |
+| *Interactive clinical simulation sandbox allowing physicians to adjust physiological targets (Target HRV 65.0 ms, Target SBP 117 mmHg) to observe simulated risk drop to 1.0% Homeostasis. Fused with ACC/AHA Class 1A Guideline-Directed Medical Therapy (GDMT) 4-pillar pharmacotherapy co-pilot and bi-axial Shadow Twin residual drift radar.* |
 
 <br/>
 
-| ☀️ **4. Hospital-Grade Clinical Light Mode** |
+| 🇮🇳 **4. Ayushman Bharat Digital Mission (ABDM) Integration** |
 | :--- |
-| ![Hospital-Grade Clinical Light Mode](docs/screenshots/04_clinical_light_mode.png) |
-| *High-contrast daylight theme tailored for bright ICU ward lighting and physician daylight rounds, featuring sterile card borders, accessible contrast ratios, and crisp semantic status indicators.* |
+| ![ABDM National Health Stack Integration](docs/screenshots/04_abdm_national_health_stack.png) |
+| *Native compliance with India's national digital health infrastructure: 14-digit ABHA ID (`91-4521-8920-0101`) with federated consent-based health record exchange across Indian healthcare providers and HL7 FHIR R4 interoperability.* |
+
+<br/>
+
+| ☀️ **5. Hospital-Grade Clinical Light Mode** |
+| :--- |
+| ![Hospital-Grade Clinical Light Mode](docs/screenshots/05_clinical_light_mode.png) |
+| *High-contrast daylight theme tailored for bright hospital ICU lighting and physician daylight rounds, featuring sterile card borders, accessible contrast ratios, and crisp semantic status indicators.* |
 
 ---
 
@@ -211,8 +218,9 @@ CardioTwin/
 │   └── screenshots/               # High-resolution clinical UI feature captures
 │       ├── 01_patient_twin_console_dark.png
 │       ├── 02_icu_ward_cohort_triage.png
-│       ├── 03_longitudinal_cascade_day1.png
-│       └── 04_clinical_light_mode.png
+│       ├── 03_in_silico_simulation_gdmt.png
+│       ├── 04_abdm_national_health_stack.png
+│       └── 05_clinical_light_mode.png
 └── README.md
 ```
 

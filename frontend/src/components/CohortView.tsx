@@ -148,7 +148,7 @@ const LiveWardCard: React.FC<{
             <HeartPulse className={`w-3 h-3 ${isCritical ? 'text-red-400 animate-bounce' : isStrain ? 'text-amber-400' : 'text-emerald-400'}`} />
             <span>INSTANT HR</span>
           </div>
-          <div className="text-xl font-bold text-white flex items-baseline gap-1">
+          <div className="text-xl font-bold text-[#F2F4F6] flex items-baseline gap-1">
             {live.instant_bpm}
             <span className="text-[9px] text-[#9EA4B5] font-normal">BPM</span>
           </div>
@@ -178,8 +178,8 @@ const LiveWardCard: React.FC<{
       {/* Bottom row: SpO2, BP, 24h Risk, Inspect */}
       <div className="flex items-center justify-between font-mono text-[10px] pt-1 border-t border-[#323D57]/50">
         <div className="flex items-center gap-2 text-[#9EA4B5]">
-          <span>SpO2: <strong className="text-white">{live.instant_spo2}%</strong></span>
-          <span>BP: <strong className="text-white">{patient.ehr.systolic_bp}/{patient.ehr.diastolic_bp}</strong></span>
+          <span>SpO2: <strong className="text-[#F2F4F6]">{live.instant_spo2}%</strong></span>
+          <span>BP: <strong className="text-[#F2F4F6]">{patient.ehr.systolic_bp}/{patient.ehr.diastolic_bp}</strong></span>
         </div>
 
         <div className="flex items-center gap-2">

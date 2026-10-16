@@ -15,8 +15,8 @@
   }
 
   html[data-theme='light'] body {
-    background-color: #F7F9FB;
-    color: #191C1E;
+    background-color: #F8FAFC;
+    color: #0F172A;
   }
 
   /* Monospace for all numbers, decimal readings, and vitals */
@@ -33,9 +33,16 @@
   }
 }
 
-/* Map the dashboard's navy surface utilities to the documented light palette. */
+/* ==========================================================================
+   HOSPITAL-GRADE CLINICAL LIGHT THEME (Class II Medical Workstation Standard)
+   Crisp sterile white surfaces (#FFFFFF), soft slate wells (#F1F5F9),
+   ultra-readable slate typography (#0F172A, #64748B), and high-contrast
+   semantic alert states (Crimson #991B1B, Warm Amber #92400E, Forest Emerald #166534).
+   ========================================================================== */
+
+/* 1. Base Navy Workstation Surface Utilities mapped to Clinical Light Palette */
 html[data-theme='light'] [class*="bg-[#0A0E18]"] {
-  background-color: #F7F9FB !important;
+  background-color: #F1F5F9 !important;
 }
 
 html[data-theme='light'] [class*="bg-[#131B2E]"] {
@@ -43,67 +50,155 @@ html[data-theme='light'] [class*="bg-[#131B2E]"] {
 }
 
 html[data-theme='light'] [class*="bg-[#161E31]"] {
-  background-color: #F2F4F6 !important;
-}
-
-html[data-theme='light'] [class*="text-[#F2F4F6]"] {
-  color: #191C1E !important;
-}
-
-html[data-theme='light'] [class*="text-[#9EA4B5]"] {
-  color: #45464D !important;
-}
-
-html[data-theme='light'] [class*="text-red-300"],
-html[data-theme='light'] [class*="text-red-400"] {
-  color: #93000A !important;
-}
-
-html[data-theme='light'] [class*="text-amber-300"],
-html[data-theme='light'] [class*="text-amber-400"] {
-  color: #7A4B00 !important;
-}
-
-html[data-theme='light'] [class*="text-emerald-300"],
-html[data-theme='light'] [class*="text-emerald-400"] {
-  color: #006B4F !important;
-}
-
-html[data-theme='light'] [class*="dark:text-[#F87171]"] {
-  color: #93000A !important;
-}
-
-html[data-theme='light'] [class*="dark:text-[#FBBF24]"] {
-  color: #7A4B00 !important;
-}
-
-html[data-theme='light'] [class*="dark:text-[#34D399]"] {
-  color: #006B4F !important;
+  background-color: #F8FAFC !important;
 }
 
 html[data-theme='light'] [class*="border-[#323D57]"] {
-  border-color: #C6C6CD !important;
+  border-color: #E2E8F0 !important;
+}
+
+html[data-theme='light'] [class*="border-[#7C839B]"] {
+  border-color: #94A3B8 !important;
+}
+
+html[data-theme='light'] [class*="text-[#F2F4F6]"] {
+  color: #0F172A !important;
+}
+
+html[data-theme='light'] [class*="text-[#9EA4B5]"] {
+  color: #64748B !important;
 }
 
 html[data-theme='light'] [class*="placeholder-[#9EA4B5]"]::placeholder {
-  color: #6B6D75 !important;
+  color: #94A3B8 !important;
 }
 
+/* 2. Semantic Critical Decompensation (Acute Cardiac Event / STAT) */
+html[data-theme='light'] [class*="bg-red-950"],
+html[data-theme='light'] [class*="bg-red-900/60"],
+html[data-theme='light'] [class*="bg-[#7F1D1D]"] {
+  background-color: #FEF2F2 !important;
+}
+
+html[data-theme='light'] [class*="border-red-500"],
+html[data-theme='light'] [class*="border-red-400"] {
+  border-color: #FECACA !important;
+}
+
+html[data-theme='light'] [class*="text-red-100"],
+html[data-theme='light'] [class*="text-red-200"],
+html[data-theme='light'] [class*="text-red-300"],
+html[data-theme='light'] [class*="text-red-400"],
+html[data-theme='light'] [class*="text-red-700"] {
+  color: #991B1B !important;
+}
+
+/* 3. Semantic Autonomic Strain (Early Prodrome / Warning) */
+html[data-theme='light'] [class*="bg-amber-950"],
+html[data-theme='light'] [class*="bg-[#78350F]"] {
+  background-color: #FFFBEB !important;
+}
+
+html[data-theme='light'] [class*="border-amber-500"],
+html[data-theme='light'] [class*="border-amber-400"] {
+  border-color: #FDE68A !important;
+}
+
+html[data-theme='light'] [class*="text-amber-100"],
+html[data-theme='light'] [class*="text-amber-200"],
+html[data-theme='light'] [class*="text-amber-300"],
+html[data-theme='light'] [class*="text-amber-400"],
+html[data-theme='light'] [class*="text-amber-800"] {
+  color: #92400E !important;
+}
+
+/* 4. Semantic Homeostasis & Real-Time Telemetry Stream (Normal / Active) */
+html[data-theme='light'] [class*="bg-emerald-950"],
+html[data-theme='light'] [class*="bg-[#064E3B]"] {
+  background-color: #F0FDF4 !important;
+}
+
+html[data-theme='light'] [class*="border-emerald-500"],
+html[data-theme='light'] [class*="border-emerald-400"] {
+  border-color: #BBF7D0 !important;
+}
+
+html[data-theme='light'] [class*="text-emerald-100"],
+html[data-theme='light'] [class*="text-emerald-200"],
+html[data-theme='light'] [class*="text-emerald-300"],
+html[data-theme='light'] [class*="text-emerald-400"],
+html[data-theme='light'] [class*="text-emerald-700"] {
+  color: #166534 !important;
+}
+
+/* 5. Informational & Model Feature Metrics (Sky / Blue) */
+html[data-theme='light'] [class*="bg-sky-950"],
+html[data-theme='light'] [class*="bg-blue-950"] {
+  background-color: #F0F9FF !important;
+}
+
+html[data-theme='light'] [class*="border-sky-500"],
+html[data-theme='light'] [class*="border-sky-400"],
+html[data-theme='light'] [class*="border-blue-500"] {
+  border-color: #BAE6FD !important;
+}
+
+html[data-theme='light'] [class*="text-sky-100"],
+html[data-theme='light'] [class*="text-sky-200"],
+html[data-theme='light'] [class*="text-sky-300"],
+html[data-theme='light'] [class*="text-sky-400"],
+html[data-theme='light'] [class*="text-blue-300"],
+html[data-theme='light'] [class*="text-blue-400"] {
+  color: #0369A1 !important;
+}
+
+/* 6. Solid Action Buttons - Preserve crisp white text */
+html[data-theme='light'] button[class*="bg-emerald-600"],
+html[data-theme='light'] button[class*="bg-emerald-500"],
+html[data-theme='light'] button[class*="bg-red-700"],
+html[data-theme='light'] button[class*="bg-red-600"],
+html[data-theme='light'] button[class*="bg-sky-600"],
+html[data-theme='light'] [class*="bg-emerald-600"] span,
+html[data-theme='light'] [class*="bg-red-700"] span,
+html[data-theme='light'] button.text-white,
+html[data-theme='light'] .keep-white {
+  color: #FFFFFF !important;
+}
+
+/* 7. CRT Oscilloscope Screen Exception: Inner canvas & HUD overlay must remain dark CRT */
+html[data-theme='light'] .ecg-grid,
+html[data-theme='light'] .ecg-grid-amber,
+html[data-theme='light'] .ecg-grid-red {
+  background-color: #050B14 !important;
+}
+
+html[data-theme='light'] .ecg-screen-hud,
+html[data-theme='light'] .ecg-screen-hud span,
+html[data-theme='light'] .ecg-screen-hud div,
+html[data-theme='light'] .ecg-screen-hud [class*="text-[#F2F4F6]"] {
+  color: #F8FAFC !important;
+}
+
+html[data-theme='light'] .ecg-screen-hud [class*="text-[#9EA4B5]"] {
+  color: #94A3B8 !important;
+}
+
+/* 8. Interactive Hovers & Clinical Scrollbar */
 html[data-theme='light'] [class*="hover:bg-[#161E31]"]:hover,
 html[data-theme='light'] [class*="hover:bg-[#1C263D]"]:hover {
-  background-color: #E8EBEF !important;
+  background-color: #E2E8F0 !important;
 }
 
 html[data-theme='light'] [class*="hover:text-[#F2F4F6]"]:hover {
-  color: #191C1E !important;
+  color: #0F172A !important;
 }
 
 html[data-theme='light'] ::-webkit-scrollbar-track {
-  background: #F2F4F6;
+  background: #F1F5F9;
 }
 
 html[data-theme='light'] ::-webkit-scrollbar-thumb {
-  background: #C6C6CD;
+  background: #CBD5E1;
 }
 
 /* Dynamic Anatomical Beating Heart Keyframes */

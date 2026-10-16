@@ -294,7 +294,7 @@ export const OscilloscopeMonitor: React.FC<OscilloscopeMonitorProps> = ({
         />
 
         {/* Live Vitals HUD Overlay */}
-        <div className="absolute top-2 right-3 pointer-events-none flex items-center gap-3 font-mono">
+        <div className="absolute top-2 right-3 pointer-events-none flex items-center gap-3 font-mono ecg-screen-hud">
           <div className="flex flex-col items-end">
             <span className="text-[9px] text-[#9EA4B5] uppercase">HR READOUT</span>
             <div className="flex items-baseline gap-1">
@@ -319,7 +319,7 @@ export const OscilloscopeMonitor: React.FC<OscilloscopeMonitorProps> = ({
         </div>
 
         {/* Sweep indicator badge */}
-        <div className="absolute bottom-1.5 left-3 pointer-events-none flex items-center gap-1.5 text-[9px] font-mono text-[#9EA4B5]">
+        <div className="absolute bottom-1.5 left-3 pointer-events-none flex items-center gap-1.5 text-[9px] font-mono text-[#9EA4B5] ecg-screen-hud">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
           <span>SYNCHRONIZED TELEMETRY SWEEP</span>
         </div>

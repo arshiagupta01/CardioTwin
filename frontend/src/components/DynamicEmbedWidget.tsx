@@ -19,9 +19,18 @@ interface EmbedPreset {
 
 export const EMBED_PRESETS: EmbedPreset[] = [
   {
+    id: 'sketchfab-beating-heart',
+    name: '3D Beating Heart (Interactive 360°)',
+    source: '3D Beating Heart',
+    type: 'sketchfab',
+    // 3D Beating Heart by jalmer on Sketchfab with real-time contractility and rotation
+    embedUrl: 'https://sketchfab.com/models/d9845afb1ee64ad094adc96320c67d98/embed?autostart=1&preload=1&ui_controls=1&ui_infos=0&ui_inspector=0&ui_watermark=0',
+    description: '3D interactive beating heart by jalmer on Sketchfab with active anatomical contractility, full 360° orbit rotation, and zoom.'
+  },
+  {
     id: 'sketchfab-heart-3d',
-    name: '3D Interactive Anatomical Heart (Rotatable)',
-    source: 'Sketchfab 3D',
+    name: '3D Anatomical Heart (Rotatable)',
+    source: 'Anatomical 3D',
     type: 'sketchfab',
     // High-quality public 3D anatomical heart with rotatable orbit and zoom
     embedUrl: 'https://sketchfab.com/models/0d68f230554c4fffaeb6c4293f0b2f6b/embed?autostart=1&preload=1&ui_controls=1&ui_infos=0&ui_inspector=0&ui_watermark=0',
@@ -30,7 +39,7 @@ export const EMBED_PRESETS: EmbedPreset[] = [
   {
     id: 'lottie-heart-beat',
     name: 'Dynamic Vector Cardiac Pulse Animation',
-    source: 'LottieFiles',
+    source: 'Lottie Pulse',
     type: 'lottie',
     embedUrl: 'https://lottie.host/embed/84cfa976-583d-4c31-8f53-27eb84511ef5/3n7M6iE8vF.json',
     description: 'High-framerate Lottie vector heartbeat animation with glowing systolic waves.'
@@ -38,7 +47,7 @@ export const EMBED_PRESETS: EmbedPreset[] = [
   {
     id: 'sketchfab-cardio-system',
     name: '3D Cardiovascular Circulatory Loop',
-    source: 'Sketchfab 3D',
+    source: 'Circulatory 3D',
     type: 'sketchfab',
     embedUrl: 'https://sketchfab.com/models/69dcffc09fe04661a357eb465a3d7637/embed?autostart=1&preload=1&ui_controls=0&ui_infos=0',
     description: '3D arterial vascular network illustrating blood pressure resistance and systemic afterload.'
@@ -50,7 +59,7 @@ export const DynamicEmbedWidget: React.FC<DynamicEmbedWidgetProps> = ({
   hrv,
   state,
 }) => {
-  const [selectedPresetId, setSelectedPresetId] = useState<string>('sketchfab-heart-3d');
+  const [selectedPresetId, setSelectedPresetId] = useState<string>('sketchfab-beating-heart');
   const [customUrl, setCustomUrl] = useState<string>('');
   const [activeUrl, setActiveUrl] = useState<string>(EMBED_PRESETS[0].embedUrl);
   const [isEditingCustom, setIsEditingCustom] = useState(false);
@@ -159,7 +168,7 @@ export const DynamicEmbedWidget: React.FC<DynamicEmbedWidgetProps> = ({
         )}
 
         {/* Live Synchronized Vitals HUD (Floating Overlay) */}
-        <div className="absolute top-2 left-2 z-10 bg-[#0A0E18]/85 border border-[#323D57] px-2.5 py-1 rounded-[2px] backdrop-blur-sm font-mono pointer-events-none">
+        <div className="absolute top-2 left-2 z-10 bg-[#0A0E18]/85 border border-[#323D57] px-2.5 py-1 rounded-[2px] backdrop-blur-sm font-mono pointer-events-none ecg-screen-hud">
           <div className="flex items-center gap-3">
             <div>
               <div className="text-[8px] uppercase text-[#9EA4B5]">LIVE RHYTHM</div>
@@ -192,15 +201,25 @@ export const DynamicEmbedWidget: React.FC<DynamicEmbedWidgetProps> = ({
         </div>
 
         {/* Interaction Hint */}
-        <div className="absolute bottom-2 right-2 z-10 bg-[#0A0E18]/85 border border-[#323D57] px-2 py-0.5 rounded-[2px] text-[8px] font-mono text-[#9EA4B5] pointer-events-none">
+        <div className="absolute bottom-2 right-2 z-10 bg-[#0A0E18]/85 border border-[#323D57] px-2 py-0.5 rounded-[2px] text-[8px] font-mono text-[#9EA4B5] pointer-events-none ecg-screen-hud">
           CLICK & DRAG TO ROTATE 3D MODEL • SCROLL TO ZOOM
         </div>
       </div>
 
-      {/* Description Footer */}
+      {/* Description Footer & Sketchfab Attribution Link */}
       <div className="px-3 py-1.5 bg-[#0A0E18] border-t border-[#323D57] flex items-center justify-between text-[9px] font-mono text-[#9EA4B5]">
-        <div className="truncate pr-2">
-          {selectedPreset ? selectedPreset.description : 'Custom dynamic embed stream loaded.'}
+        <div className="truncate pr-2 flex items-center gap-1.5">
+          <span>{selectedPreset ? selectedPreset.description : 'Custom dynamic embed stream loaded.'}</span>
+          {selectedPresetId === 'sketchfab-beating-heart' && (
+            <a
+              href="https://sketchfab.com/3d-models/beating-heart-d9845afb1ee64ad094adc96320c67d98"
+              target="_blank"
+              rel="noreferrer noopener"
+              className="text-[#1CAAD9] hover:underline inline-flex items-center gap-0.5 shrink-0"
+            >
+              [View on Sketchfab <ExternalLink className="w-2.5 h-2.5" />]
+            </a>
+          )}
         </div>
         <span className="shrink-0 text-sky-400 font-semibold">
           {selectedPresetId === 'custom' ? 'CUSTOM EMBED' : selectedPreset?.source}

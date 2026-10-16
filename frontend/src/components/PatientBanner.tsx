@@ -3,6 +3,8 @@ import { PatientProfile } from '../types/clinical';
 import { Play, Pause, RotateCcw, AlertTriangle, ShieldCheck, HeartPulse, ChevronRight, ChevronLeft, Zap, FileText, Info } from 'lucide-react';
 import { PatientAvatar } from './PatientAvatar';
 import { ClinicalTooltip } from './ClinicalTooltip';
+import { useLiveTelemetry } from '../context/LiveTelemetryContext';
+import { Radio, Activity } from 'lucide-react';
 
 interface PatientBannerProps {
   patient: PatientProfile;
@@ -20,11 +22,19 @@ export const PatientBanner: React.FC<PatientBannerProps> = ({
   onOpenReportModal,
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
+  const { isLiveMode, setIsLiveMode, getPatientLiveTelemetry } = useLiveTelemetry();
+
   const currentTelemetry = patient.telemetry_series.find((d) => d.day_index === activeDay) || patient.latest_telemetry;
   const baseline = patient.telemetry_series[0] ?? currentTelemetry;
 
-  const hrvDelta = currentTelemetry.hrv_mean - baseline.hrv_mean;
-  const rhrDelta = currentTelemetry.resting_hr_mean - baseline.resting_hr_mean;
+  // Real-time instantaneous telemetry from the physiological stream
+  const live = getPatientLiveTelemetry(patient.ehr.patient_id, currentTelemetry, patient.ehr);
+
+  const activeRisk = isLiveMode ? live.instant_risk_score : currentTelemetry.risk_score;
+  const activeState = isLiveMode ? live.instant_state : currentTelemetry.state;
+
+  const hrvDelta = (isLiveMode ? live.instant_hrv : currentTelemetry.hrv_mean) - baseline.hrv_mean;
+  const rhrDelta = (isLiveMode ? live.instant_bpm : currentTelemetry.resting_hr_mean) - baseline.resting_hr_mean;
 
   const totalDays = Math.max(1, patient.telemetry_series.length || 10);
 
@@ -32,16 +42,17 @@ export const PatientBanner: React.FC<PatientBannerProps> = ({
   useEffect(() => {
     let timer: ReturnType<typeof setInterval>;
     if (isPlaying) {
+      setIsLiveMode(false); // Scrubbing historical cascade
       timer = setInterval(() => {
         onDayChange(activeDay >= totalDays ? 1 : activeDay + 1);
       }, 1600);
     }
     return () => clearInterval(timer);
-  }, [isPlaying, activeDay, onDayChange, totalDays]);
+  }, [isPlaying, activeDay, onDayChange, totalDays, setIsLiveMode]);
 
-  const riskPercent = (currentTelemetry.risk_score * 100).toFixed(1);
-  const isDecomp = currentTelemetry.state === 'decompensation';
-  const isStrain = currentTelemetry.state === 'strain';
+  const riskPercent = (activeRisk * 100).toFixed(1);
+  const isDecomp = activeState === 'decompensation';
+  const isStrain = activeState === 'strain';
 
   const stateTheme = isDecomp
     ? {
@@ -143,7 +154,7 @@ export const PatientBanner: React.FC<PatientBannerProps> = ({
                 />
                 <path
                   strokeWidth="3.2"
-                  strokeDasharray={`${currentTelemetry.risk_score * 100}, 100`}
+                  strokeDasharray={`${activeRisk * 100}, 100`}
                   strokeLinecap="round"
                   stroke={isDecomp ? '#F87171' : isStrain ? '#FBBF24' : '#34D399'}
                   fill="none"
@@ -166,6 +177,87 @@ export const PatientBanner: React.FC<PatientBannerProps> = ({
               </button>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Real-time Wearable Stream Telemetry Strip (Hackathon Live Ingestion Protocol) */}
+      <div className={`px-3 py-2 rounded-[2px] border font-mono text-xs flex flex-wrap items-center justify-between gap-2.5 transition-all ${
+        isLiveMode
+          ? 'bg-emerald-950/20 border-emerald-500/50 text-emerald-300'
+          : 'bg-[#0A0E18] border-[#323D57] text-[#9EA4B5]'
+      }`}>
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <div className="flex items-center gap-1.5">
+            <span className={`w-2 h-2 rounded-full ${isLiveMode ? 'bg-red-500 animate-ping' : 'bg-[#9EA4B5]'}`} />
+            <span className="text-[10px] font-bold tracking-wider uppercase text-[#F2F4F6]">
+              {isLiveMode ? 'LIVE WEARABLE TELEMETRY STREAM' : 'HISTORICAL CASCADE MODE'}
+            </span>
+            <span className="text-[9px] px-1 py-0.2 bg-[#161E31] border border-[#323D57] text-[#9EA4B5] rounded-[2px]">
+              128 HZ BLE
+            </span>
+          </div>
+
+          {isLiveMode && (
+            <div className="flex items-center gap-3 text-[11px] pl-2 border-l border-[#323D57]">
+              {/* Instantaneous HR */}
+              <div className="flex items-center gap-1">
+                <HeartPulse className="w-3.5 h-3.5 text-red-400 animate-pulse" />
+                <span className="text-[#9EA4B5]">INSTANT HR:</span>
+                <strong className="text-white text-sm font-bold">{live.instant_bpm}</strong>
+                <span className="text-[9px] text-[#9EA4B5]">BPM</span>
+              </div>
+
+              {/* Respiratory Sinus Arrhythmia (RSA) */}
+              <div className="hidden sm:flex items-center gap-1 text-[10px]">
+                <Activity className="w-3 h-3 text-sky-400" />
+                <span className="text-[#9EA4B5]">RSA:</span>
+                <span className="text-sky-300 uppercase font-semibold">
+                  {live.breathing_phase} ({live.respiratory_rate} br/m)
+                </span>
+              </div>
+
+              {/* Live HRV RMSSD */}
+              <div className="flex items-center gap-1 text-[10px]">
+                <span className="text-[#9EA4B5]">LIVE HRV:</span>
+                <span className={live.instant_hrv < 25 ? 'text-red-400 font-bold' : live.instant_hrv < 38 ? 'text-amber-400' : 'text-emerald-400'}>
+                  {live.instant_hrv} ms
+                </span>
+              </div>
+
+              {/* Live SpO2 */}
+              <div className="hidden md:flex items-center gap-1 text-[10px]">
+                <span className="text-[#9EA4B5]">SpO2:</span>
+                <span className={live.instant_spo2 < 94 ? 'text-red-400 font-bold' : 'text-emerald-400'}>
+                  {live.instant_spo2}%
+                </span>
+              </div>
+
+              {/* Live Packet Counter */}
+              <div className="hidden lg:flex items-center gap-1 text-[9px] text-[#9EA4B5]">
+                <Radio className="w-2.5 h-2.5 text-emerald-400" />
+                <span>PKT #{live.packet_count.toLocaleString()}</span>
+                <span>({live.last_packet_age_ms}ms ago)</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Live Stream Mode Switch Toggle */}
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => {
+              setIsLiveMode(!isLiveMode);
+              if (isPlaying) setIsPlaying(false);
+            }}
+            className={`px-2.5 py-1 rounded-[2px] border text-[10px] font-bold flex items-center gap-1.5 transition-colors ${
+              isLiveMode
+                ? 'bg-emerald-600 text-white border-emerald-400 shadow-sm'
+                : 'bg-[#161E31] text-[#9EA4B5] border-[#323D57] hover:text-white'
+            }`}
+          >
+            <span className={`w-1.5 h-1.5 rounded-full ${isLiveMode ? 'bg-white animate-pulse' : 'bg-gray-500'}`} />
+            {isLiveMode ? 'LIVE STREAM ACTIVE' : 'SWITCH TO LIVE STREAM'}
+          </button>
         </div>
       </div>
 
@@ -192,7 +284,10 @@ export const PatientBanner: React.FC<PatientBannerProps> = ({
             hideIcon={true}
           >
             <button
-              onClick={() => setIsPlaying(!isPlaying)}
+              onClick={() => {
+                if (!isPlaying) setIsLiveMode(false);
+                setIsPlaying(!isPlaying);
+              }}
               className={`px-2.5 py-1 rounded-[2px] border text-xs font-mono font-semibold flex items-center gap-1.5 transition-colors ${
                 isPlaying
                   ? 'bg-amber-950/60 border-amber-500/50 text-amber-300'

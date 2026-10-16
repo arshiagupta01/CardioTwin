@@ -13,6 +13,7 @@ import { FhirModal } from './components/modals/FhirModal';
 import { ClinicalReportModal } from './components/modals/ClinicalReportModal';
 import { INITIAL_COHORT } from './data/cohortData';
 import { fetchPatients, savePatient } from './data/riskApi';
+import { LiveTelemetryProvider } from './context/LiveTelemetryContext';
 
 export function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('cardiotwin-theme') !== 'light');
@@ -143,106 +144,108 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0E18] text-[#F2F4F6] flex flex-col font-sans selection:bg-[#323D57]">
-      {/* Master Clinical Station Header */}
-      <Header
-        currentView={currentView}
-        onViewChange={handleViewChange}
-        onOpenDataIntake={() => setIsDataIntakeOpen(true)}
-        selectedPatientId={selectedPatientId}
-        isDarkMode={isDarkMode}
-        onToggleTheme={() => setIsDarkMode((current) => !current)}
-      />
+    <LiveTelemetryProvider>
+      <div className="min-h-screen bg-[#0A0E18] text-[#F2F4F6] flex flex-col font-sans selection:bg-[#323D57]">
+        {/* Master Clinical Station Header */}
+        <Header
+          currentView={currentView}
+          onViewChange={handleViewChange}
+          onOpenDataIntake={() => setIsDataIntakeOpen(true)}
+          selectedPatientId={selectedPatientId}
+          isDarkMode={isDarkMode}
+          onToggleTheme={() => setIsDarkMode((current) => !current)}
+        />
 
-      {/* Main Workspace Container */}
-      <main className="flex-1 p-3 md:p-4 max-w-[1680px] w-full mx-auto">
-        {currentView === 'cohort' ? (
-          /* View 1: Doctor's Cohort Triage Dashboard */
-          <CohortView
-            cohort={cohort}
-            stats={currentStats}
-            onSelectPatient={(pid) => {
-              setSelectedPatientId(pid);
-              const p = cohort.find((item) => item.ehr.patient_id === pid);
-              if (p) setActiveDay(p.current_day);
-              setCurrentView('detail');
-            }}
-            onOpenDataIntake={() => setIsDataIntakeOpen(true)}
-            onRefresh={handleRefreshCohort}
-          />
-        ) : (
-          /* View 2: Patient Bio-Digital Twin Deep Dive Console */
-          <div className="flex flex-col">
-            {/* Top Patient Banner & Longitudinal 10-Day Cascade Scrubber */}
-            <PatientBanner
-              patient={activePatient}
-              activeDay={activeDay}
-              onDayChange={handleDayChange}
-              modelConnected={modelConnected}
-              onOpenReportModal={() => setIsReportModalOpen(true)}
+        {/* Main Workspace Container */}
+        <main className="flex-1 p-3 md:p-4 max-w-[1680px] w-full mx-auto">
+          {currentView === 'cohort' ? (
+            /* View 1: Doctor's Cohort Triage Dashboard */
+            <CohortView
+              cohort={cohort}
+              stats={currentStats}
+              onSelectPatient={(pid) => {
+                setSelectedPatientId(pid);
+                const p = cohort.find((item) => item.ehr.patient_id === pid);
+                if (p) setActiveDay(p.current_day);
+                setCurrentView('detail');
+              }}
+              onOpenDataIntake={() => setIsDataIntakeOpen(true)}
+              onRefresh={handleRefreshCohort}
             />
-
-
-            {/* 3-Column Diagnostic Workstation Layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-              {/* Column 1: Dynamic Continuous Wearable Telemetry (Live Stream) */}
-              <WearableTelemetryCol
+          ) : (
+            /* View 2: Patient Bio-Digital Twin Deep Dive Console */
+            <div className="flex flex-col">
+              {/* Top Patient Banner & Longitudinal 10-Day Cascade Scrubber */}
+              <PatientBanner
                 patient={activePatient}
                 activeDay={activeDay}
-                onSelectDay={setActiveDay}
+                onDayChange={handleDayChange}
                 modelConnected={modelConnected}
-              />
-
-              {/* Column 2: Static EHR Baseline & Laboratory Profile */}
-              <EhrProfileCol ehr={activePatient.ehr} />
-
-              {/* Column 3: Twin Model Explainability & Clinical Decision Support */}
-              <ExplainabilityCol
-                patient={activePatient}
-                modelConnected={modelConnected}
-                onTriggerCall={() => setIsCallModalOpen(true)}
-                onOrderStat={() => setIsOrderModalOpen(true)}
-                onExportFhir={() => setIsFhirModalOpen(true)}
                 onOpenReportModal={() => setIsReportModalOpen(true)}
               />
+
+
+              {/* 3-Column Diagnostic Workstation Layout */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+                {/* Column 1: Dynamic Continuous Wearable Telemetry (Live Stream) */}
+                <WearableTelemetryCol
+                  patient={activePatient}
+                  activeDay={activeDay}
+                  onSelectDay={setActiveDay}
+                  modelConnected={modelConnected}
+                />
+
+                {/* Column 2: Static EHR Baseline & Laboratory Profile */}
+                <EhrProfileCol ehr={activePatient.ehr} />
+
+                {/* Column 3: Twin Model Explainability & Clinical Decision Support */}
+                <ExplainabilityCol
+                  patient={activePatient}
+                  modelConnected={modelConnected}
+                  onTriggerCall={() => setIsCallModalOpen(true)}
+                  onOrderStat={() => setIsOrderModalOpen(true)}
+                  onExportFhir={() => setIsFhirModalOpen(true)}
+                  onOpenReportModal={() => setIsReportModalOpen(true)}
+                />
+              </div>
             </div>
-          </div>
-        )}
-      </main>
+          )}
+        </main>
 
-      {/* Modals */}
-      <RecordIntakeModal
-        cohort={cohort}
-        isOpen={isDataIntakeOpen}
-        onClose={() => setIsDataIntakeOpen(false)}
-        onRecordAdded={handleRecordAdded}
-      />
+        {/* Modals */}
+        <RecordIntakeModal
+          cohort={cohort}
+          isOpen={isDataIntakeOpen}
+          onClose={() => setIsDataIntakeOpen(false)}
+          onRecordAdded={handleRecordAdded}
+        />
 
-      <CallModal
-        patient={activePatient}
-        isOpen={isCallModalOpen}
-        onClose={() => setIsCallModalOpen(false)}
-      />
+        <CallModal
+          patient={activePatient}
+          isOpen={isCallModalOpen}
+          onClose={() => setIsCallModalOpen(false)}
+        />
 
-      <OrderModal
-        patient={activePatient}
-        isOpen={isOrderModalOpen}
-        onClose={() => setIsOrderModalOpen(false)}
-      />
+        <OrderModal
+          patient={activePatient}
+          isOpen={isOrderModalOpen}
+          onClose={() => setIsOrderModalOpen(false)}
+        />
 
-      <FhirModal
-        patient={activePatient}
-        isOpen={isFhirModalOpen}
-        onClose={() => setIsFhirModalOpen(false)}
-      />
+        <FhirModal
+          patient={activePatient}
+          isOpen={isFhirModalOpen}
+          onClose={() => setIsFhirModalOpen(false)}
+        />
 
-      <ClinicalReportModal
-        patient={activePatient}
-        activeDay={activeDay}
-        isOpen={isReportModalOpen}
-        onClose={() => setIsReportModalOpen(false)}
-      />
-    </div>
+        <ClinicalReportModal
+          patient={activePatient}
+          activeDay={activeDay}
+          isOpen={isReportModalOpen}
+          onClose={() => setIsReportModalOpen(false)}
+        />
+      </div>
+    </LiveTelemetryProvider>
   );
 }
 

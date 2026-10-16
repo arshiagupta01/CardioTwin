@@ -73,6 +73,17 @@ class BatchRiskInput(BaseModel):
     records: list[RiskInput]
 
 
+class LiveTelemetryPacket(BaseModel):
+    patient_id: int
+    timestamp: str | None = None
+    instant_bpm: float
+    instant_hrv: float
+    instant_spo2: float | None = 98.0
+    instant_skin_temp: float | None = 36.6
+    respiratory_rate: float | None = 15.0
+    packet_sequence: int | None = 1
+
+
 @lru_cache(maxsize=1)
 def load_model():
     return joblib.load(MODEL_PATH)
@@ -335,3 +346,77 @@ def model_importance() -> dict:
         "roc_auc": summary.get("roc_auc"),
         "features": [{"feature": name, "importance": float(value)} for name, value in importance],
     }
+
+
+LIVE_TELEMETRY_BUFFER: dict[int, dict] = {}
+
+
+@app.post("/api/telemetry/stream")
+def ingest_live_telemetry(packet: LiveTelemetryPacket) -> dict:
+    profiles = _read_profiles()
+    target_profile = next((p for p in profiles if p["ehr"]["patient_id"] == packet.patient_id), None)
+
+    risk_score = 0.35
+    state = "homeostasis"
+
+    if target_profile and MODEL_PATH.exists():
+        ehr = target_profile["ehr"]
+        baseline_hr = target_profile.get("telemetry_series", [{}])[0].get("resting_hr_mean", 68.0)
+        baseline_hrv = target_profile.get("telemetry_series", [{}])[0].get("hrv_mean", 48.0)
+
+        row_dict = {
+            "age": float(ehr["age"]),
+            "sex": 1.0 if str(ehr["sex"]).upper() == "M" else 0.0,
+            "bmi": float(ehr["bmi"]),
+            "systolic_bp": float(ehr["systolic_bp"]),
+            "diastolic_bp": float(ehr["diastolic_bp"]),
+            "cholesterol": float(ehr["cholesterol"]),
+            "family_history": float(ehr["family_history"]),
+            "smoker": float(ehr["smoker"]),
+            "diabetes": float(ehr["diabetes"]),
+            "hrv_mean": float(packet.instant_hrv),
+            "resting_hr_mean": float(packet.instant_bpm) - 10.0,
+            "mean_hr": float(packet.instant_bpm),
+            "sleep_hours": 7.0,
+            "sleep_efficiency": 85.0,
+            "daily_steps": 6500.0,
+            "activity_score": 60.0,
+            "hrv_drop_from_baseline": max(0.0, baseline_hrv - float(packet.instant_hrv)),
+            "sleep_drop_from_baseline": 0.0,
+            "step_drop_from_baseline": 0.0,
+            "resting_hr_rise_from_baseline": max(0.0, (float(packet.instant_bpm) - 10.0) - baseline_hr),
+        }
+        try:
+            model = load_model()
+            row = pd.DataFrame([row_dict], columns=FEATURES)
+            risk_score = float(model.predict_proba(row)[0][1])
+            state = "decompensation" if risk_score >= 0.65 else "strain" if risk_score >= 0.25 else "homeostasis"
+        except Exception:
+            pass
+
+    record = {
+        "patient_id": packet.patient_id,
+        "timestamp": packet.timestamp,
+        "instant_bpm": packet.instant_bpm,
+        "instant_hrv": packet.instant_hrv,
+        "instant_spo2": packet.instant_spo2,
+        "instant_skin_temp": packet.instant_skin_temp,
+        "respiratory_rate": packet.respiratory_rate,
+        "packet_sequence": packet.packet_sequence,
+        "risk_score": round(risk_score, 3),
+        "state": state,
+    }
+    LIVE_TELEMETRY_BUFFER[packet.patient_id] = record
+    return {"status": "ok", "telemetry": record}
+
+
+@app.get("/api/telemetry/live/{patient_id}")
+def get_live_telemetry(patient_id: int) -> dict:
+    if patient_id in LIVE_TELEMETRY_BUFFER:
+        return LIVE_TELEMETRY_BUFFER[patient_id]
+    raise HTTPException(status_code=404, detail="No live telemetry stream active for this patient")
+
+
+@app.get("/api/telemetry/live")
+def get_all_live_telemetry() -> dict:
+    return {"live_streams": list(LIVE_TELEMETRY_BUFFER.values())}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, Radio, Clock, User, PlusCircle, Users, LayoutDashboard, Sun, Moon } from 'lucide-react';
+import { Activity, Radio, Clock, User, PlusCircle, Users, LayoutDashboard, Sun, Moon, Zap } from 'lucide-react';
+import { useLiveTelemetry } from '../context/LiveTelemetryContext';
 
 interface HeaderProps {
   currentView: 'cohort' | 'detail';
@@ -19,6 +20,7 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleTheme,
 }) => {
   const [utcTime, setUtcTime] = useState('');
+  const { isLiveMode, setIsLiveMode, totalPacketsReceived, samplingRateHz } = useLiveTelemetry();
 
   // Clinical UTC clock
   useEffect(() => {
@@ -43,11 +45,24 @@ export const Header: React.FC<HeaderProps> = ({
             <h1 className="text-xs font-bold tracking-wider font-mono text-[#F2F4F6] leading-none">
               CARDIOTWIN <span className="text-[#9EA4B5] font-normal">// BIO-DIGITAL TWIN [SYNCAI]</span>
             </h1>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-              <span className="text-[9px] font-mono text-emerald-400 tracking-wider font-semibold">
-                SENSOR STREAM ACTIVE • WEARABLE LIVE SYNC
-              </span>
+            <div className="flex items-center gap-2 mt-0.5">
+              <button
+                type="button"
+                onClick={() => setIsLiveMode(!isLiveMode)}
+                className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded-[2px] border text-[9px] font-mono tracking-wider font-semibold transition-all ${
+                  isLiveMode
+                    ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300 hover:border-emerald-400'
+                    : 'bg-[#161E31] border-[#323D57] text-[#9EA4B5] hover:text-[#F2F4F6]'
+                }`}
+                title="Click to toggle live telemetry ingestion"
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${isLiveMode ? 'bg-emerald-400 animate-ping' : 'bg-gray-500'}`} />
+                <span>
+                  {isLiveMode
+                    ? `LIVE ${samplingRateHz}HZ STREAM (${totalPacketsReceived.toLocaleString()} PKTS)`
+                    : 'STREAM PAUSED (CLICK TO RESUME)'}
+                </span>
+              </button>
             </div>
           </div>
         </div>

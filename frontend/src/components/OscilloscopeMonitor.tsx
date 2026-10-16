@@ -90,7 +90,9 @@ export const OscilloscopeMonitor: React.FC<OscilloscopeMonitorProps> = ({
       if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
         canvas.width = targetWidth;
         canvas.height = targetHeight;
-        // Fill initial background with medical grid
+        // Fill initial background with deep black medical screen
+        ctx.shadowBlur = 0;
+        ctx.shadowColor = 'transparent';
         ctx.fillStyle = '#050B14';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
@@ -163,17 +165,21 @@ export const OscilloscopeMonitor: React.FC<OscilloscopeMonitorProps> = ({
       const sweepX = sweepXRef.current;
       const nextX = sweepX + sweepAdvance;
 
-      // 1. Clear vertical erase beam ahead of the sweep line
+      // 1. Clear vertical erase beam ahead of the sweep line (NO SHADOW on erase beam)
+      ctx.shadowBlur = 0;
+      ctx.shadowColor = 'transparent';
       const eraseBandWidth = Math.max(16, sweepAdvance * 4);
       ctx.fillStyle = '#050B14';
       ctx.fillRect(sweepX, 0, eraseBandWidth, canvasHeight);
 
-      // 2. Redraw faint medical ECG grid within erased band
+      // 2. Redraw faint medical ECG grid within erased band (NO SHADOW on grid)
+      ctx.shadowBlur = 0;
+      ctx.shadowColor = 'transparent';
       ctx.strokeStyle = currentState === 'decompensation'
-        ? 'rgba(248, 113, 113, 0.09)'
+        ? 'rgba(248, 113, 113, 0.08)'
         : currentState === 'strain'
-          ? 'rgba(251, 191, 36, 0.09)'
-          : 'rgba(52, 211, 153, 0.09)';
+          ? 'rgba(251, 191, 36, 0.08)'
+          : 'rgba(52, 211, 153, 0.08)';
       ctx.lineWidth = 1;
       ctx.beginPath();
       const gridSpacing = 20 * (window.devicePixelRatio || 1);
@@ -188,10 +194,10 @@ export const OscilloscopeMonitor: React.FC<OscilloscopeMonitorProps> = ({
 
       // 3. Draw continuous smooth ECG trace line connecting previous frame to current frame
       const prevY = prevYRef.current !== null ? prevYRef.current : y;
-      ctx.shadowBlur = 8;
+      ctx.shadowBlur = 6;
       ctx.shadowColor = currentTraceColor;
       ctx.strokeStyle = currentTraceColor;
-      ctx.lineWidth = 2.4 * (window.devicePixelRatio || 1);
+      ctx.lineWidth = 2.2 * (window.devicePixelRatio || 1);
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
 
@@ -201,12 +207,16 @@ export const OscilloscopeMonitor: React.FC<OscilloscopeMonitorProps> = ({
       ctx.stroke();
 
       // 4. Draw bright leading phosphor sweep head dot
-      ctx.shadowBlur = 10;
-      ctx.shadowColor = '#FFFFFF';
+      ctx.shadowBlur = 6;
+      ctx.shadowColor = currentTraceColor;
       ctx.fillStyle = '#FFFFFF';
       ctx.beginPath();
-      ctx.arc(nextX, y, 2.2 * (window.devicePixelRatio || 1), 0, Math.PI * 2);
+      ctx.arc(nextX, y, 2.0 * (window.devicePixelRatio || 1), 0, Math.PI * 2);
       ctx.fill();
+
+      // Always clear shadows immediately so background fillRect never inherits blur
+      ctx.shadowBlur = 0;
+      ctx.shadowColor = 'transparent';
 
       // Advance sweep head
       prevYRef.current = y;

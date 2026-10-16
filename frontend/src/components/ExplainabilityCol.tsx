@@ -3,6 +3,7 @@ import { PatientProfile } from '../types/clinical';
 import { fetchModelImportance, ModelImportance, predictRisk, toModelFeatures, ModelPrediction } from '../data/riskApi';
 import { Cpu, Sliders, PhoneCall, Stethoscope, Download, ArrowRight, Check, AlertCircle, Wifi, WifiOff, FileText, CheckSquare, Square } from 'lucide-react';
 import { ClinicalTooltip } from './ClinicalTooltip';
+import { GdmtCoPilotCard } from './GdmtCoPilotCard';
 
 interface ExplainabilityColProps {
   patient: PatientProfile;
@@ -320,6 +321,18 @@ export const ExplainabilityCol: React.FC<ExplainabilityColProps> = ({
           </div>
         </div>
       </div>
+
+      {/* AI GDMT Pharmacotherapy Co-Pilot */}
+      <GdmtCoPilotCard
+        patient={patient}
+        liveBpm={Math.round(latest.resting_hr_mean + 12)}
+        liveHrv={latest.hrv_mean}
+        onApplyTargets={(optHrv, optRhr, optSbp) => {
+          setTargetHrv(optHrv);
+          setTargetRhr(optRhr);
+          setTargetSbp(optSbp);
+        }}
+      />
 
       {/* Clinical Decision Support Action Protocols */}
       <div className="rounded-[4px] border border-[#323D57] bg-[#131B2E] p-3 flex flex-col gap-2">

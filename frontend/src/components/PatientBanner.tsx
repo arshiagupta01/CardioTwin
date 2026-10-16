@@ -94,13 +94,23 @@ export const PatientBanner: React.FC<PatientBannerProps> = ({
         <div className="flex items-center gap-3">
           <PatientAvatar patientId={patient.ehr.patient_id} name={patient.ehr.name} />
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-base font-bold tracking-tight text-[#F2F4F6] font-sans">
                 {patient.ehr.name}
               </h2>
               <span className="font-mono text-xs text-[#9EA4B5] px-1.5 py-0.5 bg-[#161E31] rounded-[2px] border border-[#323D57]/60">
                 {patient.ehr.age}{patient.ehr.sex} • BMI {patient.ehr.bmi}
               </span>
+              <ClinicalTooltip
+                term="ABDM HEALTH ID (ABHA)"
+                definition="Ayushman Bharat Health Account (ABHA) unique 14-digit national identifier enabling federated consent-based health record exchange across Indian healthcare providers."
+                clinicalSignificance="Ensures patient digital twin data seamlessly interoperates with national ABDM registries."
+              >
+                <span className="font-mono text-[10px] px-1.5 py-0.5 rounded-[2px] bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 font-bold flex items-center gap-1 cursor-help">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  ABHA: 91-4521-8920-{String(patient.ehr.patient_id).padStart(4, '0')}
+                </span>
+              </ClinicalTooltip>
             </div>
             <p className="text-xs text-[#9EA4B5] mt-0.5 font-sans">
               <strong className="text-[#F2F4F6]">PRIMARY DIAGNOSIS:</strong> {patient.ehr.diagnosis}

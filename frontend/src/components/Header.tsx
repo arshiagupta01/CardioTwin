@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, Radio, Clock, User, PlusCircle, Users, LayoutDashboard, Sun, Moon, Zap } from 'lucide-react';
+import { Activity, Radio, Clock, User, PlusCircle, Users, LayoutDashboard, Sun, Moon, Zap, Award } from 'lucide-react';
 import { useLiveTelemetry } from '../context/LiveTelemetryContext';
 
 interface HeaderProps {
   currentView: 'cohort' | 'detail';
   onViewChange: (view: 'cohort' | 'detail') => void;
   onOpenDataIntake: () => void;
+  onOpenJudgeTour?: () => void;
   selectedPatientId?: number;
   isDarkMode: boolean;
   onToggleTheme: () => void;
@@ -15,6 +16,7 @@ export const Header: React.FC<HeaderProps> = ({
   currentView,
   onViewChange,
   onOpenDataIntake,
+  onOpenJudgeTour,
   selectedPatientId,
   isDarkMode,
   onToggleTheme,
@@ -97,6 +99,18 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Clinical Station Metadata: UTC Clock, Clinician Badge, Theme Toggle */}
       <div className="flex items-center gap-3 font-mono text-xs">
+        {/* Judge 60s Tour Trigger */}
+        {onOpenJudgeTour && (
+          <button
+            onClick={onOpenJudgeTour}
+            className="px-2.5 py-1 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white rounded-[2px] text-[11px] font-bold flex items-center gap-1.5 transition-all shadow-sm animate-pulse cursor-pointer border border-amber-400/50"
+            title="Launch 60-Second Guided Tour for Hackathon Judges"
+          >
+            <Award className="w-3.5 h-3.5 text-white" />
+            <span>▶ 60s JUDGE TOUR</span>
+          </button>
+        )}
+
         {/* Add Record Trigger */}
         <button
           onClick={onOpenDataIntake}

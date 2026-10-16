@@ -11,6 +11,7 @@ import { CallModal } from './components/modals/CallModal';
 import { OrderModal } from './components/modals/OrderModal';
 import { FhirModal } from './components/modals/FhirModal';
 import { ClinicalReportModal } from './components/modals/ClinicalReportModal';
+import { JudgeTourModal } from './components/modals/JudgeTourModal';
 import { INITIAL_COHORT } from './data/cohortData';
 import { fetchPatients, savePatient } from './data/riskApi';
 import { LiveTelemetryProvider } from './context/LiveTelemetryContext';
@@ -31,6 +32,7 @@ export function App() {
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [isFhirModalOpen, setIsFhirModalOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isJudgeTourOpen, setIsJudgeTourOpen] = useState(false);
 
 
   // Active patient object
@@ -151,6 +153,7 @@ export function App() {
           currentView={currentView}
           onViewChange={handleViewChange}
           onOpenDataIntake={() => setIsDataIntakeOpen(true)}
+          onOpenJudgeTour={() => setIsJudgeTourOpen(true)}
           selectedPatientId={selectedPatientId}
           isDarkMode={isDarkMode}
           onToggleTheme={() => setIsDarkMode((current) => !current)}
@@ -243,6 +246,13 @@ export function App() {
           activeDay={activeDay}
           isOpen={isReportModalOpen}
           onClose={() => setIsReportModalOpen(false)}
+        />
+
+        <JudgeTourModal
+          isOpen={isJudgeTourOpen}
+          onClose={() => setIsJudgeTourOpen(false)}
+          onJumpToCohort={() => handleViewChange('cohort')}
+          onJumpToDetail={() => handleViewChange('detail')}
         />
       </div>
     </LiveTelemetryProvider>

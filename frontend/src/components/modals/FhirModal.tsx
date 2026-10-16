@@ -25,6 +25,22 @@ export const FhirModal: React.FC<FhirModalProps> = ({ patient, isOpen, onClose }
         resource: {
           resourceType: "Patient",
           id: `PT-${patient.ehr.patient_id}`,
+          identifier: [
+            {
+              system: "https://healthid.ndhm.gov.in",
+              value: `91-4521-8920-${String(patient.ehr.patient_id).padStart(4, '0')}`,
+              type: {
+                coding: [
+                  {
+                    system: "http://terminology.hl7.org/CodeSystem/v2-0203",
+                    code: "MR",
+                    display: "Ayushman Bharat Health Account (ABHA ID)"
+                  }
+                ]
+              },
+              assigner: { display: "Ayushman Bharat Digital Mission (ABDM)" }
+            }
+          ],
           name: [{ use: "official", text: patient.ehr.name }],
           gender: patient.ehr.sex === 'M' ? "male" : "female",
           birthDate: `${new Date().getFullYear() - patient.ehr.age}-01-01`
@@ -112,12 +128,23 @@ export const FhirModal: React.FC<FhirModalProps> = ({ patient, isOpen, onClose }
           <div className="flex items-center gap-2">
             <FileCode className="w-4 h-4 text-sky-400" />
             <h3 className="text-xs font-bold font-mono uppercase text-[#F2F4F6]">
-              HL7 FHIR R4 CLINICAL INTEROPERABILITY EXPORT
+              HL7 FHIR R4 & ABDM CLINICAL INTEROPERABILITY EXPORT
             </h3>
           </div>
           <button onClick={onClose} className="text-[#9EA4B5] hover:text-[#F2F4F6]">
             <X className="w-4 h-4" />
           </button>
+        </div>
+
+        {/* ABDM Integration Banner */}
+        <div className="px-4 py-2 bg-emerald-950/20 border-b border-emerald-500/30 flex items-center justify-between text-[10px] font-mono">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-emerald-300 font-bold">ABDM MILESTONE 1/2/3 READY</span>
+            <span className="text-[#9EA4B5]">|</span>
+            <span className="text-[#F2F4F6]">ABHA: 91-4521-8920-{String(patient.ehr.patient_id).padStart(4, '0')}</span>
+          </div>
+          <span className="text-[9px] text-[#9EA4B5]">FEDERATED CONSENT REPOSITORY</span>
         </div>
 
         {/* JSON Viewer */}

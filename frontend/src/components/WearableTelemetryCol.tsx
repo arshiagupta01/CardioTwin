@@ -4,6 +4,7 @@ import { OscilloscopeMonitor } from './OscilloscopeMonitor';
 import { DynamicBeatingHeart } from './DynamicBeatingHeart';
 import { DynamicEmbedWidget } from './DynamicEmbedWidget';
 import { WaveformCharts } from './WaveformCharts';
+import { TwinDriftRadar } from './TwinDriftRadar';
 import { Smartphone, BatteryCharging, Radio, Thermometer, Box, Heart, Activity, HeartPulse, Zap } from 'lucide-react';
 import { ClinicalTooltip } from './ClinicalTooltip';
 import { useLiveTelemetry } from '../context/LiveTelemetryContext';
@@ -191,7 +192,15 @@ export const WearableTelemetryCol: React.FC<WearableTelemetryColProps> = ({
         </div>
       </div>
 
-      {/* 3. Longitudinal 10-Day Waveform Charts (HRV, RHR, Sleep Architecture, Steps) */}
+      {/* 3. Shadow Twin vs Real Patient Residual Drift Radar */}
+      <TwinDriftRadar
+        patient={patient}
+        currentTelemetry={currentTelemetry}
+        liveBpm={activeBpm}
+        liveHrv={activeHrv}
+      />
+
+      {/* 4. Longitudinal 10-Day Waveform Charts (HRV, RHR, Sleep Architecture, Steps) */}
       <WaveformCharts
         telemetrySeries={patient.telemetry_series}
         activeDay={activeDay}
@@ -199,7 +208,7 @@ export const WearableTelemetryCol: React.FC<WearableTelemetryColProps> = ({
         state={activeState}
       />
 
-      {/* 4. Wearable Device Hardware Diagnostics */}
+      {/* 5. Wearable Device Hardware Diagnostics */}
       <div className="rounded-[4px] border border-[#323D57] bg-[#131B2E] p-2.5">
         <div className="text-[10px] uppercase tracking-wider font-semibold text-[#9EA4B5] mb-2 flex items-center justify-between">
           <ClinicalTooltip
